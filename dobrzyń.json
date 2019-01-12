@@ -1,0 +1,11 @@
+{
+	"book_title": "Lauda sejmików ziemi dobrzyńskiej",
+	"palatinate": "inowrocławskie",
+	"convent_location": "ziemia dobrzyńska",
+	"default_convent_author": "sejmik dobrzyński",
+	"path": "../lauda/dobrzyń/",
+	"prefix": "tekst-",
+	"min_inparagraph_line_len": 67,
+	"max_nonmeta_line_len": 999,
+	"max_heading_len": 280
+}
