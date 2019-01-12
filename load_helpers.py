@@ -36,7 +36,7 @@ heading_signs = [ # characteristic elements in a heading
          # months
          re.compile('stycze?[nń]|luty?|marz?e?c|kwie[tc]i?e?[nń]|maj|czerwi?e?c|lipi?e?c|sierpi?e?[nń]|wrze[sś]i?e?[nń]|październik|listopad|grudz?i?e?[nń]|[ji]anuar|februar|mart|april|mai|[ji]u[nl]i|august|e?o?m?br')
          # titles
-        re.compile('Uchwał[ay]|Uniwersał|Laudu?m?a?|Instrukcy?j?[ae]|Instructio|Konfederacy?j?|Odpowiedź|P?okazowan|Manifest|Protestac'),
+        re.compile('Uchwał[ay]|Uniwersał|Laudu?m?a?|Instrukcy?j?[ae]|Instructio|Konfederacy?j?|Odpowiedź|P?okazowan|Manifest|Protestac|Reskrypt'),
         ]
 def is_heading(section, config):
     if len(section) > config['max_heading_len']:
