@@ -75,6 +75,7 @@ for page_lines in pages:
         # End paragraph - do the relevant thing with it.
         if line[-1] == '.' or len(line) < config['min_inparagraph_line_len']:
             # Add heading.
+            # TODO TODO TODO TODO TODO TODO multi-line headings
             if is_heading(current_paragraph, config):
                 # We have a new heading/title - add the document section that just ended.
                 if current_document_data['title'] != '': # not the start of the book

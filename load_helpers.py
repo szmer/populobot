@@ -1,14 +1,28 @@
 import re
 
 # Meta section detection.
-meta_signs = [ # characteristic elements in a meta section
+meta_signs = [ # characteristic elements for a meta section
             # page range at the end
-            re.compile('\\d+-\\d+\\.$')
+            re.compile('\\d+-\\d+\\.$'),
+            # "Rękopis"
+            re.compile('^.?.?Rp\\.'),
+            # evident footnote
+            re.compile('^[\\WiIvVxX]{1,3}.{1,70}$'),
+            # number range
+            re.compile('[0-9]-[0-9]'),
+            # anachronistic vocabulary
+            re.compile('wsp[oöó0][lł|]czesn|Vol\\.|Fasc\\.|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|( zob\\.)|( tek[sś])|( str\\.)')
         ]
 def is_meta_line(line, config):
     for sign in meta_signs:
         if sign.match(line):
             return True
+    # If more than the half of the line of non-alphabetic
+    if len(re.sub('\\w', '', line)) / len(line) >= 0.5:
+        return True
+    # If large percentage of tokens is abbreviated
+    if line.count('. ') / line.count(' ') >= 0.33:
+        return True
     return False
 
 # Headings detection.
@@ -18,11 +32,11 @@ heading_signs = [ # characteristic elements in a heading
          # numbering - also days, years
          re.compile('\\d+')
          # numbers put in words
-         re.compile('pierwsz|drug|wt[oó]r|dwa|trz[ae][cd]z?|czwart|czter|pi[ąę][tc]|sz[óe][śs][tć]|si[eó]de?m|[oó][sś]i?e?m|dziewi[ęą][tć]|dzie[sś]i?[ęą][tcć]|na[śs][tć]|st[oa]|setn?|tysi[ęą]c|prim|secund|terti|quart|quint|se[xg]|vice|esim|cent|mille')
+         re.compile('pierwsz|drug|wt[oó]r|dwa|trz[ae][cd]z?|czwart|czter|pi[ąę][tc]|sz[óe][śs][tć]|si[eó]de?m|[oó][sś]i?e?m|dziewi[ęą][tć]|dzie[sś]i?[ęą][tcć]|na[śs][tć]|st[oa]|setn?|tysi[ęą]c|prim|secund|terti|quart|quint|se[xg]|vice|esim|cent|mille|( [xXvViI]{1,3} )')
          # months
          re.compile('stycze?[nń]|luty?|marz?e?c|kwie[tc]i?e?[nń]|maj|czerwi?e?c|lipi?e?c|sierpi?e?[nń]|wrze[sś]i?e?[nń]|październik|listopad|grudz?i?e?[nń]|[ji]anuar|februar|mart|april|mai|[ji]u[nl]i|august|e?o?m?br')
          # titles
-        re.compile('Uchwał[ay]|Uniwersał|Laudu?m?a?|Instrukcy?j?[ae]|Instructio|Konfederacy?j?|Odpowiedź|P?okazowan|Manifest'),
+        re.compile('Uchwał[ay]|Uniwersał|Laudu?m?a?|Instrukcy?j?[ae]|Instructio|Konfederacy?j?|Odpowiedź|P?okazowan|Manifest|Protestac'),
         ]
 def is_heading(section, config):
     if len(section) > config['max_heading_len']:
