@@ -1,0 +1,12 @@
+{
+	"book_title": "Akta sejmikowe województwa krakowskiego, tom I",
+	"palatinate": "krakowskie",
+	"convent_location": "województwo krakowskie",
+	"default_convent_author": "sejmik województwa krakowskiego",
+	"path": "../lauda/kraków/skany/out/",
+	"prefix": "tekst-",
+	"min_inparagraph_line_len": 62,
+	"max_nonmeta_line_len": 80,
+	"max_heading_len": 280,
+	"ignore_page_ranges": [[0, 16], [466, 535]]
+}

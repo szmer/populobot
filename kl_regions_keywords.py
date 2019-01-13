@@ -25,7 +25,7 @@ for (path, freqs) in [(region1_path, region1_freqs), (region2_path, region2_freq
                 text = row[12].replace('\\n', ' ')
                 tokens = word_tokenize(text)
                 for token in tokens:
-                    if re.match('^\w+$', token):
+                    if re.match('^\w+$', token) and len(token) > 4: # kludgy token length
                         token = token.lower()
                         freqs[token] += 1
 
@@ -38,12 +38,14 @@ partial_kls_1 = dict()
 partial_kls_2 = dict()
 
 for (src_words, kls, src_freq, target_freq) in [(region1_words, partial_kls_1, region1_freqs, region2_freqs), (region2_words, partial_kls_2, region2_freqs, region1_freqs)]:
-    for word in src_words:
-        if src_freq.freq(word) > 0 and target_freq.freq(word) > 0:
+    for (word, _) in src_words:
+        if target_freq.freq(word) > 0:
             # Taken from Klingenstein et al. 2014
             p = src_freq.freq(word) / src_freq.N() 
             q = target_freq.freq(word) / target_freq.N()
-            kls[word] = p * log((2*p) / (p + q))
+            kls[word] = p * math.log((2*p) / (p + q))
+        else:
+            kls[word] = 1.0
 
 # Print results.
 sorted_kls_1 = sorted(list(partial_kls_1.items()), reverse=True, key=lambda x: x[1])
@@ -51,9 +53,9 @@ sorted_kls_2 = sorted(list(partial_kls_2.items()), reverse=True, key=lambda x: x
 
 print('Results for', region1_path)
 for (word, kl) in sorted_kls_1:
-    print('{}: {}'.format(word, kl))
+    print('{}: {:.9f}'.format(word, kl))
 
 print() # newline
 print('Results for', region2_path)
 for (word, kl) in sorted_kls_2:
-    print('{}: {}'.format(word, kl))
+    print('{}: {:.9f}'.format(word, kl))

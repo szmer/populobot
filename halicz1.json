@@ -1,0 +1,12 @@
+{
+	"book_title": "Akta grodzkie i ziemskie z archiwum ziemskiego we Lwowie. Tom XXIV: Lauda sejmikowe halickie 1575-1695",
+	"palatinate": "ruskie",
+	"convent_location": "ziemia halicka",
+	"default_convent_author": "sejmik ziemi halickiej",
+	"path": "../lauda/halicz/halicz1/",
+	"prefix": "tekst-",
+	"min_inparagraph_line_len": 79,
+	"max_nonmeta_line_len": 110,
+	"max_heading_len": 280,
+	"ignore_page_ranges": [[0, 24], [523, 597]]
+}
