@@ -7,5 +7,6 @@
 	"prefix": "tekst-",
 	"min_inparagraph_line_len": 67,
 	"max_nonmeta_line_len": 999,
-	"max_heading_len": 280
+	"max_heading_len": 280,
+	"ignore_page_ranges": [[0, 7], [416, 473]]
 }
