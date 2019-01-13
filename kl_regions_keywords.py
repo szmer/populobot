@@ -3,6 +3,7 @@ from sys import argv, exit
 
 from nltk.tokenize import word_tokenize
 from nltk.probability import FreqDist, DictionaryProbDist
+from matplotlib import pyplot as plt
 
 if len(argv) != 4:
     print('USAGE: python3 kl_regions_keywords.py REGION1_CSV REGION2_CSV CHECKED_WORDS_COUNT')
@@ -25,7 +26,7 @@ for (path, freqs) in [(region1_path, region1_freqs), (region2_path, region2_freq
                 text = row[12].replace('\\n', ' ')
                 tokens = word_tokenize(text)
                 for token in tokens:
-                    if re.match('^\w+$', token) and len(token) > 4: # kludgy token length
+                    if re.match('^\w+$', token) and len(token) > 4: # kludgy token length cutoff
                         token = token.lower()
                         freqs[token] += 1
 
@@ -44,8 +45,8 @@ for (src_words, kls, src_freq, target_freq) in [(region1_words, partial_kls_1, r
             p = src_freq.freq(word) / src_freq.N() 
             q = target_freq.freq(word) / target_freq.N()
             kls[word] = p * math.log((2*p) / (p + q))
-        else:
-            kls[word] = 1.0
+###        else:
+###            kls[word] = 1.0
 
 # Print results.
 sorted_kls_1 = sorted(list(partial_kls_1.items()), reverse=True, key=lambda x: x[1])
@@ -54,8 +55,36 @@ sorted_kls_2 = sorted(list(partial_kls_2.items()), reverse=True, key=lambda x: x
 print('Results for', region1_path)
 for (word, kl) in sorted_kls_1:
     print('{}: {:.9f}'.format(word, kl))
+plotpoints_x = []
+for (word, kl) in sorted_kls_1:
+    plotpoints_x.append(kl)
+fig = plt.figure(1, figsize=(9, 9), dpi=200)
+fig.suptitle('{} ↹ {}'.format(region2_path, region1_path))
+plt.hlines(0, -0.000000002, 0.000000002)
+ax = fig.add_subplot(111)
+plt.eventplot(plotpoints_x, orientation='horizontal', colors='b')
+plt.rcParams.update({'font.size': 5})
+for (wi, (word, kl)) in enumerate(sorted_kls_1):
+    ax.annotate(word, (plotpoints_x[wi], 0.5), xytext=(plotpoints_x[wi], 0.12*(wi%4)),
+                                               arrowprops={'arrowstyle': '-[' })
+ax.ticklabel_format(useOffset=False)
+plt.show()
 
-print() # newline
+###print() # newline
 print('Results for', region2_path)
 for (word, kl) in sorted_kls_2:
     print('{}: {:.9f}'.format(word, kl))
+plotpoints_x = []
+for (word, kl) in sorted_kls_2:
+    plotpoints_x.append(kl)
+fig = plt.figure(2, figsize=(9, 9), dpi=200)
+fig.suptitle('{} ↹ {}'.format(region1_path, region2_path))
+plt.hlines(0, -0.000000002, 0.000000002)
+ax = fig.add_subplot(111)
+plt.eventplot(plotpoints_x, orientation='horizontal', colors='b')
+plt.rcParams.update({'font.size': 5})
+for (wi, (word, kl)) in enumerate(sorted_kls_2):
+    ax.annotate(word, (plotpoints_x[wi], 0.5), xytext=(plotpoints_x[wi], 0.12*(wi%4)),
+                                               arrowprops={'arrowstyle': '-[' })
+ax.ticklabel_format(useOffset=False)
+plt.show()
