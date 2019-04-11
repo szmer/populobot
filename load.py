@@ -71,9 +71,10 @@ current_paragraph_type = 'text' # can be text or heading
 current_document_data = { 'title': '' }
 current_document_section = ''
 current_meta_section = ''
-current_paragraph = ''
+current_paragraph = '' # we accumulate lines here until a heading or short line
 sections = []
-current_document_id = 0 # section id is just len(sections)
+current_document_id = 0
+# section id is just len(sections)
 previous_was_heading = False # indicates whether the last line was a heading
 for page_lines in pages:
     for line in page_lines:
@@ -83,8 +84,9 @@ for page_lines in pages:
         else:
             current_paragraph += ' ' + line
 
-
-        # Meta sections detection (what is not dected as meta, will be document).
+        # Meta sections detection (what is not detected as meta, will be document).
+        # First, we determine whether the line is meta - if not, it may be heading or
+        # be just a regular document fragment.
         if (len(line) > config['max_nonmeta_line_len'] or is_meta_line(line, config)):
             current_section_type = 'meta'
             a_heading = False
@@ -104,7 +106,9 @@ for page_lines in pages:
                 if (not previous_was_heading) and current_document_data['title'] != '': # not the start of the book
                     current_document_id += 1
                     section = Section('document', current_document_data['title'],
-                                       current_document_section.replace('- ', ''), current_document_id)
+                                       current_document_section.replace('- ', ''),
+                                       len(sections),
+                                       document_id=current_document_id)
                     sections.append(section)
                     current_document_data['title'] = ''
                     current_document_section = ''
@@ -140,7 +144,7 @@ for page_lines in pages:
                     current_meta_section = ''
             # Clear paragraph.
             current_paragraph = ''
-    # End page - commit the meta section.
+    # End of the page file - commit the meta section.
     if current_meta_section != '' or current_section_type == 'meta':
         # Add the last paragraph if necessary.
         if current_section_type == 'meta':
