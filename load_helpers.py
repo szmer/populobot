@@ -20,6 +20,10 @@ def is_meta_line(line, config):
         if sign.search(line):
             ###print(sign, line)
             return True
+    # If more than the half of the line of non-alphabetic
+    if len(line) > 0 and len(re.sub('\\w', '', line)) / len(line) >= 0.5:
+        return True
+
     # If large percentage of tokens is abbreviated
     ###if line.count(' ') > 0 and line.count('. ') / line.count(' ') >= 0.33:
     ###    return True

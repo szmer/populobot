@@ -1,6 +1,8 @@
-import csv, io, json, os, re
+import json, os, re
 from load_helpers import is_heading, is_meta_line
 from sys import argv, exit
+
+from section import Section
 
 if len(argv) != 2:
     print('USAGE: python3 load.py CONFIG_FILE')
@@ -13,42 +15,6 @@ config = None
 with open(config_file_path) as config_file:
     config = json.loads(config_file.read())
 
-# Section class template.
-class Section():
-    def __init__(self, section_type, section_title, section_contents, section_id, document_id=False):
-        self.book_title = config['book_title']
-        self.inbook_section_id = section_id
-        self.inbook_document_id = document_id
-        self.scan_pages = False
-        self.book_pages = False
-        self.section_title = section_title
-        self.section_type = section_type
-        self.date = False
-        self.palatinate = config['palatinate']
-        self.convent_location = config['convent_location']
-        self.created_location = False
-        self.author = config['default_convent_author']
-        self.text = section_contents
-
-    def row_string(self):
-        string_output = io.StringIO()
-        csv_writer = csv.writer(string_output, quoting=csv.QUOTE_NONNUMERIC)
-        csv_writer.writerow([
-            self.book_title,
-            self.inbook_section_id,
-            self.inbook_document_id,
-            self.scan_pages,
-            self.book_pages,
-            self.section_title,
-            self.section_type,
-            self.date,
-            self.palatinate,
-            self.convent_location,
-            self.created_location,
-            self.author,
-            self.text
-            ])
-        return string_output.getvalue().strip()
 
 # Load all the files.
 pages = [] # as lists of lines
