@@ -50,7 +50,7 @@ heading_antisigns = ([
         [re.compile(s) for s in ['y[lł]\\s', '[sś]my\\s', 'y[lł]u\\s', 'aj[ąe]\\s', '[aeyi]ć\\s', 'ąc[aey]?\\s']]
         +
         # other out of place vocabulary
-        [re.compile(s, flags=re.IGNORECASE) for s in ['ichm', 'jmp']]
+        [re.compile(s, flags=re.IGNORECASE) for s in ['ichm', 'jmp', '\\smy\\s', 'mci']]
         )
 
 def is_heading(section, config):

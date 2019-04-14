@@ -1,29 +1,29 @@
-import csv, json
-from sys import argv, exit
+import argparse, csv, json
 from math import sqrt
 
 from section import Section
 
-if len(argv) != 3:
-    print('USAGE: python3 load.py CONFIG_FILE CSV_FILE')
-    exit(-1)
+argparser = argparse.ArgumentParser(description='Score quality of document indexing.')
+argparser.add_argument('--print-titles', '-t', action='store_true')
+argparser.add_argument('config_path')
+argparser.add_argument('csv_path')
 
-config_file_path = argv[1]
-csv_path = argv[2]
+args = argparser.parse_args()
 
 # Load the config
 config = None
-with open(config_file_path) as config_file:
+with open(args.config_path) as config_file:
     config = json.loads(config_file.read())
 
 # Load document sections from the csv
 document_sections = []
-with open(csv_path) as csv_file:
+with open(args.csv_path) as csv_file:
     csv_reader = csv.reader(csv_file)
     for row in csv_reader:
         section = Section.from_csv_row(row)
         if section.section_type == 'document':
-            #print(section.section_title)
+            if args.print_titles:
+                print(section.section_title)
             document_sections.append(section)
 
 # Collect document lengths from both sources.
