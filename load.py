@@ -71,7 +71,7 @@ for page_lines in pages:
                 ###print(current_document_section[:29], previous_was_heading, current_document_data['title'])
                 if (not previous_was_heading) and current_document_data['title'] != '': # not the start of the book
                     current_document_id += 1
-                    section = Section('document', current_document_data['title'],
+                    section = Section.new(config, 'document', current_document_data['title'],
                                        current_document_section.replace('- ', ''),
                                        len(sections),
                                        document_id=current_document_id)
@@ -105,7 +105,7 @@ for page_lines in pages:
                 # If there is something meta hanging around, commit it now.
                 if current_meta_section != '':
                     # Create and append the meta section.
-                    section = Section('meta', '', current_meta_section.replace('- ', ''), len(sections))
+                    section = Section.new(config, 'meta', '', current_meta_section.replace('- ', ''), len(sections))
                     sections.append(section)
                     current_meta_section = ''
             # Clear paragraph.
@@ -121,7 +121,7 @@ for page_lines in pages:
             # Clear paragraph.
             current_paragraph = ''
         # Create and append the meta section.
-        section = Section('meta', '', current_meta_section.replace('- ', ''), len(sections))
+        section = Section.new(config, 'meta', '', current_meta_section.replace('- ', ''), len(sections))
         sections.append(section)
         current_meta_section = ''
         # Always reset section type to document at the end of page.
@@ -131,12 +131,12 @@ for page_lines in pages:
 # (last document section)
 if current_document_section != '':
     current_document_id += 1
-    section = Section('document', current_document_data['title'],
+    section = Section.new(config, 'document', current_document_data['title'],
                        current_document_section.replace('- ', ''), current_document_id)
 # (last meta section)
 if current_meta_section != '':
     # Create and append the meta section.
-    section = Section('meta', '', current_meta_section.replace('- ', ''), len(sections))
+    section = Section.new(config, 'meta', '', current_meta_section.replace('- ', ''), len(sections))
     sections.append(section)
 
 # Print collected sections as csv rows.

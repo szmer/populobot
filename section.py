@@ -1,4 +1,4 @@
-import io
+import csv, io
 
 # Section class template.
 class Section():
@@ -26,7 +26,7 @@ class Section():
         return string_output.getvalue().strip()
 
     @classmethod
-    def new(cls, section_type, section_title, section_contents, section_id, document_id=False):
+    def new(cls, config, section_type, section_title, section_contents, section_id, document_id=False):
         self = cls()
         self.book_title = config['book_title']
         self.inbook_section_id = section_id
@@ -41,6 +41,7 @@ class Section():
         self.created_location = False
         self.author = config['default_convent_author']
         self.text = section_contents
+        return self
 
     @classmethod
     def from_csv_row(cls, row):

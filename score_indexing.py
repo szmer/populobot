@@ -23,6 +23,7 @@ with open(csv_path) as csv_file:
     for row in csv_reader:
         section = Section.from_csv_row(row)
         if section.section_type == 'document':
+            #print(section.section_title)
             document_sections.append(section)
 
 # Collect document lengths from both sources.
@@ -51,9 +52,10 @@ elif len(scaled_document_lengths) > len(true_document_lengths):
     current_orig_index = 0
     for li, length in enumerate(scaled_document_lengths[1:]):
         # We need to have enough documents left to cover everything; if it is true, merge documents if this produces some distance reduction.
-        if ((len(scaled_document_lengths)-li) > len(true_document_lengths)-current_orig_index
+        if (current_orig_index == len(true_document_lengths)-1
+                or ((len(scaled_document_lengths)-li) > len(true_document_lengths)-current_orig_index
                 and ((forward_alignment[-1]+length-true_document_lengths[current_orig_index])**2 
-                < (forward_alignment[-1]-true_document_lengths[current_orig_index])**2)):
+                < (forward_alignment[-1]-true_document_lengths[current_orig_index])**2))):
             forward_alignment[-1] += length
         else:
             forward_alignment.append(length)
