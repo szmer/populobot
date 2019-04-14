@@ -12,6 +12,8 @@ meta_signs = [ # characteristic elements for a meta section
             re.compile('^[\\WiIvVxX]{1,3} [^\\\\]{1,40}$'),
             # number range
             re.compile('[0-9]-[0-9]'),
+            # pauses, hyphens
+            re.compile('-—'),
             # anachronistic vocabulary
             re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Fasc\\.)|([fF]ol\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( zob\\.)|( tek[sś])|( str\\.)')
         ]
@@ -50,7 +52,7 @@ heading_antisigns = ([
         [re.compile(s) for s in ['y[lł]\\s', '[sś]my\\s', 'y[lł]u\\s', 'aj[ąe]\\s', '[aeyi]ć\\s', 'ąc[aey]?\\s']]
         +
         # other out of place vocabulary
-        [re.compile(s, flags=re.IGNORECASE) for s in ['ichm', 'jmp', '\\smy\\s', 'mci']]
+        [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', 'mość', 'mci', '\\sbył']]
         )
 
 def is_heading(section, config):

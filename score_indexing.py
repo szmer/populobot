@@ -91,4 +91,4 @@ else:
 # Print the final score.
 difference = abs(len(true_document_lengths)-len(scaled_document_lengths))
 print('Lengths distance / document count difference / total score')
-print('{} {} {}'.format(distance, difference, distance+difference))
+print('{:.3f} {}({:.3f}) {:.3f}'.format(distance, difference, difference/len(true_document_lengths), distance+difference))

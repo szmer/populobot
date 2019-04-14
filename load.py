@@ -23,13 +23,15 @@ for dirname, dirnames, filenames in os.walk(config['path']):
     for filename in filenames:
         if re.match('^'+config['prefix'], filename):
             file_number = int(re.search('\\d+', filename).group(0))
+            ignored = False
             if 'ignore_page_ranges' in config:
                 for page_range in config['ignore_page_ranges']:
                     if file_number >= page_range[0] and file_number < page_range[1]:
-                        continue
-            with open(dirname + filename) as text_file:
-                page_lines = text_file.read().split('\n')
-                pages.append(page_lines)
+                        ignored = True
+            if not ignored:
+                with open(dirname + filename) as text_file:
+                    page_lines = text_file.read().split('\n')
+                    pages.append(page_lines)
 
 # Process content lines for files sequentially.
 current_section_type = 'document' # can be document or meta
