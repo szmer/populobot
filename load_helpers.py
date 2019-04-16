@@ -43,16 +43,16 @@ heading_signs = ([ # characteristic elements in a heading
          MONTHS]
          +
          # titles - each of those will count as one occurence of a sign
-        [re.compile(s) for s in ['Uchwał[ay]', 'Uniwersał', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'Konfederacy?j?', 'Odpowiedź', 'P?okazowan', 'Manifest', 'Protestac', 'Reskrypt', 'Uniwersał', 'Sejmik', 'przedsejmo', 'konkowacyj', 'województwa', 'ziemi']])
+        [re.compile(s) for s in ['Uchwał[ay]', 'Uniwersał', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'Konfederacy?j?', 'Odpowiedź', 'P?okazowan', 'Manifest', 'Protestac', 'Reskrypt', 'Uniwersał', 'Sejmik', 'przedsejmo', 'konwokacyj', 'województwa', 'ziemi']])
 heading_antisigns = ([
         re.compile('\\D0+'), # isolated zeros are bogus
         ]
         +
         # verb endings
-        [re.compile(s) for s in ['y[lł]\\s', '[sś]my\\s', 'y[lł]u\\s', 'aj[ąe]\\s', '[aeyi]ć\\s', 'ąc[aey]?\\s']]
+        [re.compile(s) for s in ['[aeu]j[ąe]\\s', '[aeyi]ć\\s', '[iyaeąę]ł[ay]?\\s', '[iae[iaeąę]]li?\\s', '[sś]my\\s', 'ąc[aey]?[mj]?u?\\s', '[aoe]n[yieaą]?[jm]?\\s', 'wszy\\s', 'eni[ea]m?\\s']]
         +
         # other out of place vocabulary
-        [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', 'mość', 'mci', '\\sbył']]
+        [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sbył', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panowania', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', '\\sakta\\s']]
         )
 
 def is_heading(section, config):
