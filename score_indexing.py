@@ -85,8 +85,63 @@ elif len(scaled_document_lengths) > len(true_document_lengths):
 
     distance = min([forward_alignment_distance, backward_alignment_distance])
 # Option 3: Our indexed csv has fewer documents than the truth.
+elif len(scaled_document_lengths)*2 > len(true_document_lengths):
+    forward_alignment = [ ]
+    current_orig_index = 0
+    for li, length in enumerate(scaled_document_lengths):
+        if current_orig_index+1 < len(true_document_lengths) and li+1 < len(scaled_document_lengths):
+            current_ngb_distances = ((length-true_document_lengths[current_orig_index])**2
+                    + (scaled_document_lengths[li+1] + true_document_lengths[current_orig_index+1])**2)
+            ngb_proportion = true_document_lengths[current_orig_index] / sum(true_document_lengths[current_orig_index:current_orig_index+2])
+            split_ngb_distances = ((ngb_proportion*length-true_document_lengths[current_orig_index])**2
+                    + ((1-ngb_proportion)*length-true_document_lengths[current_orig_index+1])**2)
+            # We are forced to split if there is less remaining indexed sections (x2 if we'd split them all) than there is remaining true ones.
+            # On the other hand, we must stop splitting if there is no room left for that in accomodating the remaining portion of true pages.
+            if (split_ngb_distances < current_ngb_distances or (len(scaled_document_lengths) - li)*2 <= len(true_document_lengths) - current_orig_index) and len(true_document_lengths) - current_orig_index > (len(scaled_document_lengths) - li):
+                forward_alignment += [ngb_proportion*length, (1-ngb_proportion)*length]
+                current_orig_index += 2
+            else:
+                forward_alignment.append(length)
+                current_orig_index += 1
+        else:
+            forward_alignment.append(length)
+            if current_orig_index+1 != len(true_document_lengths) or li+1 != len(scaled_document_lengths):
+                raise RuntimeError('bad forward alignment of shorter page index (there is an error in algorithm)')
+    forward_alignment_distance = 0
+    for li, length in enumerate(true_document_lengths):
+        forward_alignment_distance += (length - forward_alignment[li])**2
+    forward_alignment_distance = sqrt(forward_alignment_distance)
+
+    backward_alignment = [ ]
+    current_orig_index = len(true_document_lengths)-1
+    for li, length in enumerate(reversed(scaled_document_lengths)):
+        if current_orig_index != 0 and li+1 < len(scaled_document_lengths):
+            current_ngb_distances = ((length-true_document_lengths[current_orig_index])**2
+                    + (scaled_document_lengths[li+1] + true_document_lengths[current_orig_index-1])**2)
+            ngb_proportion = true_document_lengths[current_orig_index] / sum(true_document_lengths[current_orig_index-1:current_orig_index+1])
+            split_ngb_distances = ((ngb_proportion*length-true_document_lengths[current_orig_index])**2
+                    + ((1-ngb_proportion)*length-true_document_lengths[current_orig_index-1])**2)
+            # We are forced to split if there is less remaining indexed sections (x2 if we'd split them all) than there is remaining true ones.
+            # On the other hand, we must stop splitting if there is no room left for that in accomodating the remaining portion of true pages.
+            if (split_ngb_distances < current_ngb_distances or (len(scaled_document_lengths)-li)*2 <= current_orig_index) and current_orig_index > len(scaled_document_lengths) - li - 1:
+                backward_alignment += [ngb_proportion*length, (1-ngb_proportion)*length]
+                current_orig_index -= 2
+            else:
+                backward_alignment.append(length)
+                current_orig_index -= 1
+        else:
+            backward_alignment.append(length)
+            if current_orig_index != 0 or li+1 != len(scaled_document_lengths):
+                raise RuntimeError('bad backward alignment of shorter page index (there is an error in algorithm)')
+    backward_alignment.reverse()
+    backward_alignment_distance = 0
+    for li, length in enumerate(true_document_lengths):
+        backward_alignment_distance += (length - backward_alignment[li])**2
+    backward_alignment_distance = sqrt(backward_alignment_distance)
+
+    distance = min([forward_alignment_distance, backward_alignment_distance])
 else:
-    raise NotImplementedError('the case with fewer documents than truth is not implemented')
+    raise NotImplementedError('the case with >2x fewer documents than truth is not implemented')
 
 # Print the final score.
 difference = abs(len(true_document_lengths)-len(scaled_document_lengths))
