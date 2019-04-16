@@ -15,7 +15,7 @@ meta_signs = [ # characteristic elements for a meta section
             # pauses, hyphens
             re.compile('-—'),
             # anachronistic vocabulary
-            re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Fasc\\.)|([fF]ol\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( zob\\.)|( tek[sś])|( str\\.)')
+            re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Fasc\\.)|([fF]ol\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( tek[sś])|( str\\.)', flags=re.IGNORECASE)
         ]
 def is_meta_line(line, config):
     for sign in meta_signs:
@@ -63,6 +63,14 @@ def is_heading(section, config):
     signs_count = len([s for s in signs if s])
     antisigns = [s.search(section) for s in heading_antisigns]
     antisigns_count = len([s for s in antisigns if s])
+    # If the first letter is not uppercase, it's a strong signal against.
+    try:
+        first_letter = re.search('[^\\W\\d_]', section).group(0)
+        if first_letter.lower() == first_letter:
+            antisigns_count += 1
+    # Penalize also no-letter sections if such are found.
+    except AttributeError:
+        antisigns_count += 1
     signs_count -= antisigns_count
 ###    print(section, signs_count, 'signs')
 
