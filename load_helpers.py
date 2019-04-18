@@ -1,6 +1,6 @@
 import re, roman
 
-MONTHS = re.compile('(stycze?[nń])|(luty?)|(marz?e?c)|(kwie[tc]i?e?[nń])|(maj)|(czerwi?e?c)|(lipi?e?c)|(sierpi?e?[nń])|(wrze[sś]i?e?[nń])|(październik)|(listopad)|(grudz?i?e?[nń])|([ji]anuar)|(februar)|(mart)|(april)|(mai)|([ji]u[nl]i)|(august)|(septemb)|(octob)|(decemb)')
+MONTHS = '(stycze?[nń])|(luty?)|(marz?e?c)|(kwie[tc]i?e?[nń])|(maj)|(czerwi?e?c)|(lipi?e?c)|(sierpi?e?[nń])|(wrze[sś]i?e?[nń])|(październik)|(listopad)|(grudz?i?e?[nń])|([ji]anuar)|(februar)|(mart)|(april)|(mai)|([ji]u[nl]i)|(august)|(septemb)|(octob)|(decemb)'
 
 # Meta section detection.
 meta_signs = [ # characteristic elements for a meta section
@@ -32,35 +32,49 @@ def is_meta_line(line, config):
     return False
 
 # Headings detection.
-heading_signs = ([ # characteristic elements in a heading
-         # square brackets used to number sections in editions
-         re.compile('^\\[.*\\]'),
-         # numbering - also days, years
-         re.compile('\\d+'),
-         # numbers put in words
-         re.compile('(pierwsz)|(drug)|(wt[oó]r)|(dwa)|(trz[ae][cd]z?)|(czwart)|(czter)|(pi[ąę][tc])|(sz[óe][śs][tć])|(si[eó]de?m)|([oó][sś]i?e?m)|(dziewi[ęą][tć])|(dzie[sś]i?[ęą][tcć])|(na[śs][tć])|(st[oa])|(setn?)|(tysi[ęą]c)|(prim)|(secund)|(terti)|(quart)|(quint)|(se[xg])|(vice)|(esim)|(cent)|(mille)|( [xXvViI]{1,3} )'),
-         # months
-         MONTHS]
-         +
-         # titles - each of those will count as one occurence of a sign
-        [re.compile(s) for s in ['Uchwał[ay]', 'Uniwersał', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'Konfederacy?j?', 'Odpowiedź', 'P?okazowan', 'Manifest', 'Protestac', 'Reskrypt', 'Uniwersał', 'Sejmik', 'przedsejmo', 'konwokacyj', 'województwa', 'ziemi']])
+# Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
+heading_signs_1ord = ([ 
+    # square brackets used to number sections in editions
+    re.compile('^\\[.*\\]')]
+    +
+    # titles - each of those will count as one occurence of a sign
+    [re.compile(s) for s in ['Uchwał[ay]', 'Uniwersał', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Poselstwo', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'App?robac[yj]a', 'Konfederacy?j?', 'Odpowiedź', 'List', 'Mowa', 'Zdanie', 'Pokazowan', 'Okazowan', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Sejmik', 'Zebranie', 'Articuli', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Kwit\\s']])
+heading_signs_2ord = ([
+    re.compile('\\d+'),
+    # numbers put in words
+    re.compile('(pierwsz)|(drug)|(wt[oó]r)|(dwa)|(trz[ae][cd]z?)|(czwart)|(czter)|(pi[ąę][tc])|(sz[óe][śs][tć])|(si[eó]de?m)|([oó][sś]i?e?m)|(dziewi[ęą][tć])|(dzie[sś]i?[ęą][tcć])|(na[śs][tć])|(st[oa])|(setn?)|(tysi[ęą]c)|(prim)|(secund)|(terti)|(quart)|(quint)|(se[xg])|(vice)|(esim)|(cent)|(mille)|( [xXvViIl]{1,3} )'
+        # numbering - also days, years
+        + '|\\d+'
+        # months
+        + '|' + MONTHS)]
+    +
+    # types of documents/assemblies
+    [re.compile(s, flags=re.IGNORECASE) for s in ['przedsejmo', 'konwokacyj', 'deput', 'zwołuj', 'kwituj', 'wyboru', 'elekc[jy]', 'wzywa', 'ruszenia', 'posłom']]
+    +
+    # instances issuing documents
+    [re.compile(s, flags=re.IGNORECASE) for s in ['sejmiku', 'conventus', 'palatinatu', 'przedsejmo', 'konwokacyj', 'deput', 'województwa', 'ziemi', 'księstw', 'rycerstw', 'szlachty', 'ziemian']])
+# The number of antisigns is subtracted from the number of signs.
 heading_antisigns = ([
-        re.compile('\\D0+'), # isolated zeros are bogus
-        ]
-        +
-        # verb endings
-        [re.compile(s) for s in ['[aeu]j[ąe]\\s', '[aeyi]ć\\s', '[iyaeąę]ł[ay]?\\s', '[iae[iaeąę]]li?\\s', '[sś]my\\s', 'ąc[aey]?[mj]?u?\\s', '[aoe]n[yieaą]?[jm]?\\s', 'wszy\\s', 'eni[ea]m?\\s']]
-        +
-        # other out of place vocabulary
-        [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sbył', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panowania', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', '\\sakta\\s']]
-        )
+    re.compile('\\D0+'), # isolated zeros are bogus
+    ]
+    +
+    # verb endings
+    [re.compile(s) for s in ['[aeu]j[ąe]\\s', '[ae]my\\s', '[aeyi]ć\\s', '[iyaeąę]ł[ay]?\\s', '[iae[iaeąę]]li?\\s', '[sś]my\\s', 'ąc[aey]?[mj]?u?\\s', '[aoe]n[yieaą]?[jm]?\\s', 'wszy\\s', 'eni[ea]m?\\s']]
+    +
+    # other out of place vocabulary
+    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sbył', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panowania', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', '\\sakta\\s', 'mowa tu\\s']])
 
 def is_heading(section, config):
     if len(section) < 15 or len(section) > config['max_heading_len']:
         return False
 
-    signs = [s.search(section) for s in heading_signs]
-    signs_count = len([s for s in signs if s])
+    signs_1ord = [s.search(section) for s in heading_signs_1ord]
+    signs_1ord_count = len([s for s in signs_1ord if s])
+    signs_2ord = [s.search(section) for s in heading_signs_2ord]
+    signs_2ord_count = len([s for s in signs_2ord if s])
+    if signs_1ord_count == 0:
+        signs_2ord_count -= 1
+    signs_count = signs_1ord_count + signs_2ord_count
     antisigns = [s.search(section) for s in heading_antisigns]
     antisigns_count = len([s for s in antisigns if s])
     # If the first letter is not uppercase, it's a strong signal against.
@@ -104,7 +118,7 @@ month_words_to_numbers = [
 def extract_dates(title_str):
     dates = []
     title_str = title_str.lower()
-    month_words = MONTHS # from global
+    month_words = re.compile(MONTHS) # from global
     month_romandigs = re.compile('[xXvViI]{1,3}')
     for find in list(month_words.finditer(title_str)) + list(month_romandigs.finditer(title_str)):
         month_number = False

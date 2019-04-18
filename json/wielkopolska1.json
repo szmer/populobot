@@ -1,0 +1,12 @@
+{
+	"book_title": "Akta sejmikowe województw poznańskiego i kaliskiego, tom I (1572-1632)",
+	"palatinate": "kaliskie, poznańskie",
+	"convent_location": "Środa Wielkopolska",
+	"default_convent_author": "sejmik województw kaliskiego i poznańskiego",
+	"path": "../lauda/wielkopolska/lauda_1/",
+	"prefix": "tekst-",
+	"min_inparagraph_line_len": 65,
+	"max_nonmeta_line_len": 89,
+	"max_heading_len": 220,
+	"ignore_page_ranges": [[0, 39], [680, 681]]
+}
