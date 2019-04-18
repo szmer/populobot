@@ -38,7 +38,7 @@ heading_signs_1ord = ([
     re.compile('^\\[.*\\]')]
     +
     # titles - each of those will count as one occurence of a sign
-    [re.compile(s) for s in ['Uchwał[ay]', 'Uniwersał', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Poselstwo', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'App?robac[yj]a', 'Konfederacy?j?', 'Odpowiedź', 'List', 'Mowa', 'Zdanie', 'Pokazowan', 'Okazowan', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Sejmik', 'Zebranie', 'Articuli', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Kwit\\s']])
+    [re.compile(s) for s in ['Uchwał[ay]', 'Deklarac', 'Postanowien', 'Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Poselstwo', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'App?robac[yj]a', 'Konfederacy?j?', 'Odpowiedź', 'List', 'Mowa', 'Zdanie', 'Pokazowan', 'Okazowan', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Zapisk', 'Sejmik', 'Zebranie', 'Articuli', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Kwit\\s']])
 heading_signs_2ord = ([
     re.compile('\\d+'),
     # numbers put in words
@@ -62,11 +62,14 @@ heading_antisigns = ([
     [re.compile(s) for s in ['[aeu]j[ąe]\\s', '[ae]my\\s', '[aeyi]ć\\s', '[iyaeąę]ł[ay]?\\s', '[iae[iaeąę]]li?\\s', '[sś]my\\s', 'ąc[aey]?[mj]?u?\\s', '[aoe]n[yieaą]?[jm]?\\s', 'wszy\\s', 'eni[ea]m?\\s']]
     +
     # other out of place vocabulary
-    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sbył', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panowania', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', '\\sakta\\s', 'mowa tu\\s']])
+    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', '\\sakta\\s', 'mowa tu\\s']])
 
 def is_heading(section, config):
     if len(section) < 15 or len(section) > config['max_heading_len']:
         return False
+
+    # Do some possible cleanup.
+    section = section.replace('-', '')
 
     signs_1ord = [s.search(section) for s in heading_signs_1ord]
     signs_1ord_count = len([s for s in signs_1ord if s])
@@ -88,7 +91,7 @@ def is_heading(section, config):
     signs_count -= antisigns_count
 ###    print(section, signs_count, 'signs')
 
-    return signs_count >= 2 and len(section) > 0 and signs_count > (len(section) / 30)
+    return signs_count >= 2 and len(section) > 0 and signs_count > (len(section) / 50)
 
 month_words_to_numbers = [
         # NOTE conventionally replace all i with j, convert to lowercase for this matching
