@@ -17,17 +17,17 @@ meta_signs = [ # characteristic elements for a meta section
             # anachronistic vocabulary
             re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Fasc\\.)|([fF]ol\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( tek[sś])|( str\\.)', flags=re.IGNORECASE)
         ]
-def is_meta_line(line, config):
+def is_meta_fragment(fragment, config):
     for sign in meta_signs:
-        if sign.search(line):
-            ###print(sign, line)
+        if sign.search(fragment):
+            ###print(sign, fragment)
             return True
-    # If more than the half of the line of non-alphabetic
-    if len(line) > 0 and len(re.sub('\\w', '', line)) / len(line) >= 0.5:
+    # If more than the half of the fragment of non-alphabetic
+    if len(fragment) > 0 and len(re.sub('\\w', '', fragment)) / len(fragment) >= 0.5:
         return True
 
     # If large percentage of tokens is abbreviated
-    ###if line.count(' ') > 0 and line.count('. ') / line.count(' ') >= 0.33:
+    ###if fragment.count(' ') > 0 and fragment.count('. ') / fragment.count(' ') >= 0.33:
     ###    return True
     return False
 
