@@ -38,7 +38,7 @@ heading_signs_1ord = ([
     re.compile('^\\[.*\\]')]
     +
     # titles - each of those will count as one occurence of a sign
-    [re.compile(s) for s in ['Uchwał[ay]', 'Deklarac', 'Postanowien', 'Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Poselstwo', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'App?robac[yj]a', 'Konfederacy?j?', 'Odpowiedź', 'List', 'Mowa', 'Zdanie', 'Pokazowan', 'Okazowan', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Zapisk', 'Sejmik', 'Zebranie', 'Articuli', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Kwit\\s']])
+    [re.compile(s) for s in ['Artyk', 'Uchwał[ay]', 'Deklarac', 'Postanowien', 'Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'App?robac[yj]a', 'Konfederacy?j?', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Articuli', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Kwit\\s']])
 heading_signs_2ord = ([
     re.compile('\\d+'),
     # numbers put in words
