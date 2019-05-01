@@ -62,11 +62,11 @@ heading_antisigns = ([
     [re.compile(s) for s in ['[aeu]j[ąe]\\s', '[ae]my\\s', '[aeyi]ć\\s', '[iyaeąę]ł[ay]?\\s', '[iae[iaeąę]]li?\\s', '[sś]my\\s', 'ąc[aey]?[mj]?u?\\s', '[aoe]n[yieaą]?[jm]?\\s', 'wszy\\s', 'eni[ea]m?\\s']]
     +
     # other out of place vocabulary
-    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', '\\sakta\\s', 'mowa tu\\s']])
+    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d']])
 
-def is_heading(section, config):
+def heading_score(section, config):
     if len(section) < 15 or len(section) > config['max_heading_len']:
-        return False
+        return -1.5
 
     # Do some possible cleanup.
     section = section.replace('-', '')
@@ -76,7 +76,7 @@ def is_heading(section, config):
     signs_2ord = [s.search(section) for s in heading_signs_2ord]
     signs_2ord_count = len([s for s in signs_2ord if s])
     if signs_1ord_count == 0:
-        signs_2ord_count -= 1
+        signs_2ord_count -= 1.5
     signs_count = signs_1ord_count + signs_2ord_count
     antisigns = [s.search(section) for s in heading_antisigns]
     antisigns_count = len([s for s in antisigns if s])
@@ -90,8 +90,19 @@ def is_heading(section, config):
         antisigns_count += 1
     signs_count -= antisigns_count
 ###    print(section, signs_count, 'signs')
+    # To be positive, the signs count must be more than a factor dependent on section length.
+    return signs_count - (len(section) / 50)
 
-    return signs_count >= 2 and len(section) > 0 and signs_count > (len(section) / 50)
+def doc_beginning_score(section, config):
+    signs_count = 0.0
+    sign_1ord = re.match('[^\\w]{0,4}my.? rady', section, flags=re.IGNORECASE)
+    signs_2ord = ['dygnitarze', 'urzędnic', 'rycerstw', 'obywatel', 'wszyst', 'koronn', 'świec', 'duchown', 'ziem']
+    if sign_1ord is not None:
+        signs_count += 0.3
+        for sign in signs_2ord:
+            if section.lower().find(sign):
+                signs_count += 0.2 / len(signs_2ord)
+    return signs_count
 
 month_words_to_numbers = [
         # NOTE conventionally replace all i with j, convert to lowercase for this matching
