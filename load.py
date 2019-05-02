@@ -46,40 +46,50 @@ for page in pages:
     paragraphs = page.split('\n\n')
     for paragraph in paragraphs:
         commit_previous = False # we need to do that if we've encountered a heading
+        new_title = False # we will store it here to set after commiting the previous one
         if is_meta_fragment(paragraph, config):
             section = Section.new(config, 'meta', '', paragraph, len(sections))
             sections.append(section)
         else:
             # If it's not meta, handle the case where there might have been a heading previosly.
+            # Note that all document paragraphs pass through here, unless they were identified as a heading right away.
             if possible_heading:
                 if previous_heading_score + doc_beginning_score(paragraph, config) > 0:
                     commit_previous = True
-                    current_document_data['title'] = possible_heading
+                    new_title = possible_heading
                 # If there's no chance for a heading, add it to the current document section.
                 else:
                     if current_document_section != '':
-                        current_document_section += '\\n\\n' + paragraph
+                        current_document_section += '\\n\\n' + possible_heading
                     else:
-                        current_document_section = paragraph
+                        current_document_section = possible_heading
                 possible_heading = False
             heading_score_estimation = heading_score(paragraph, config)
             if heading_score_estimation > 0.0:
                 commit_previous = True
-                current_document_data['title'] = paragraph
+                new_title = paragraph
+                possible_heading = False
             else:
                 previous_heading_score = heading_score_estimation
                 possible_heading = paragraph
         # Commit the previous document, without what we decided to be a heading.
         if commit_previous:
-            section = Section.new(config, 'document', current_document_data['title'],
-                               current_document_section,#.replace('- ', ''),
-                               len(sections),
-                               document_id=current_document_id)
-            sections.append(section)
-            current_document_section = ''
-            current_document_id += 1
-            current_document_data = clear_document_data
+            if current_document_data['title'] != '':
+                section = Section.new(config, 'document', current_document_data['title'],
+                                   current_document_section,#.replace('- ', ''),
+                                   len(sections),
+                                   document_id=current_document_id)
+                sections.append(section)
+                current_document_section = ''
+                current_document_id += 1
+                current_document_data = clear_document_data
+            current_document_data['title'] = new_title
 # If something remains in the document buffer, commit it.
+if possible_heading:
+    if current_document_section != '':
+        current_document_section += '\\n\\n' + paragraph
+    else:
+        current_document_section = paragraph
 if current_document_section != '':
     section = Section.new(config, 'document', current_document_data['title'],
                        current_document_section,#.replace('- ', ''),
