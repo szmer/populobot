@@ -52,7 +52,7 @@ for page in pages:
             sections.append(section)
         else:
             # If it's not meta, handle the case where there might have been a heading previosly.
-            # Note that all document paragraphs pass through here, unless they were identified as a heading right away.
+            # Note that all document paragraphs pass through here
             if possible_heading:
                 if previous_heading_score + doc_beginning_score(paragraph, config) > 0:
                     commit_previous = True
@@ -65,23 +65,23 @@ for page in pages:
                         current_document_section = possible_heading
                 possible_heading = False
             heading_score_estimation = heading_score(paragraph, config)
-            if heading_score_estimation > 0.0:
-                commit_previous = True
-                new_title = paragraph
-                possible_heading = False
-            else:
-                previous_heading_score = heading_score_estimation
-                possible_heading = paragraph
+            previous_heading_score = heading_score_estimation
+            possible_heading = paragraph
         # Commit the previous document, without what we decided to be a heading.
         if commit_previous:
             if current_document_data['title'] != '':
-                section = Section.new(config, 'document', current_document_data['title'],
-                                   current_document_section,#.replace('- ', ''),
-                                   len(sections),
-                                   document_id=current_document_id)
-                sections.append(section)
-                current_document_section = ''
-                current_document_id += 1
+                if current_document_section != '':
+                    section = Section.new(config, 'document', current_document_data['title'],
+                                       current_document_section,#.replace('- ', ''),
+                                       len(sections),
+                                       document_id=current_document_id)
+                    sections.append(section)
+                    current_document_section = ''
+                    current_document_id += 1
+                # If there is no document content, add it as a meta section.
+                else:
+                    section = Section.new(config, 'meta', current_document_data['title'], '', len(sections))
+                    sections.append(section)
                 current_document_data = clear_document_data
             current_document_data['title'] = new_title
 # If something remains in the document buffer, commit it.

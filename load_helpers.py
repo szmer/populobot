@@ -22,8 +22,8 @@ def is_meta_fragment(fragment, config):
         if sign.search(fragment):
             ###print(sign, fragment)
             return True
-    # If more than the half of the fragment of non-alphabetic
-    if len(fragment) > 0 and len(re.sub('\\w', '', fragment)) / len(fragment) >= 0.5:
+    # If a large part of the fragment of non-alphabetic
+    if len(fragment) > 0 and len(re.sub('[^\\W0-9]', '', fragment)) / len(fragment) >= 0.65:
         return True
 
     # If large percentage of tokens is abbreviated
@@ -59,10 +59,10 @@ heading_antisigns = ([
     ]
     +
     # verb endings
-    [re.compile(s) for s in ['[aeu]j[ąe]\\s', '[ae]my\\s', '[aeyi]ć\\s', '[iyaeąę]ł[ay]?\\s', '[iae[iaeąę]]li?\\s', '[sś]my\\s', 'ąc[aey]?[mj]?u?\\s', '[aoe]n[yieaą]?[jm]?\\s', 'wszy\\s', 'eni[ea]m?\\s']]
+    [re.compile(s) for s in ['[aeu]j[ąe][,\.\\s]', '[ae]my[,\.\\s]', '[aeyi]ć[,\.\\s]', '[iyaeąę]ł[ay]?[,\.\\s]', '[iae[iaeąę]]li?[,\.\\s]', '[sś]my[,\.\\s]', 'ąc[aey]?[mj]?u?[,\.\\s]', '[aoe]n[yieaą]?[jm]?[,\.\\s]', 'wszy[,\.\\s]', 'eni[ea]m?[,\.\\s]']]
     +
     # other out of place vocabulary
-    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d']])
+    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor']])
 
 def heading_score(section, config):
     if len(section) < 15 or len(section) > config['max_heading_len']:
@@ -94,14 +94,14 @@ def heading_score(section, config):
     return signs_count - (len(section) / 50)
 
 def doc_beginning_score(section, config):
-    signs_count = 0.0
-    sign_1ord = re.match('[^\\w]{0,4}my.? rady', section, flags=re.IGNORECASE)
-    signs_2ord = ['dygnitarze', 'urzędnic', 'rycerstw', 'obywatel', 'wszyst', 'koronn', 'świec', 'duchown', 'ziem']
-    if sign_1ord is not None:
+    signs_count = -0.5
+    sign_1ord = re.match('[^\\w]{0,4}my.? r[au]d', section, flags=re.IGNORECASE)
+    signs_2ord = ['dygnitarze', 'urzędnic', 'rycerstw', 'obywatel', 'panow', 'wszyst', 'wszytk', 'koronn', 'świec', 'duchown', 'ziem']
+    if sign_1ord is not None or (len(section) > 0 and section[0].lower() != section[0]):
         signs_count += 0.3
         for sign in signs_2ord:
             if section.lower().find(sign):
-                signs_count += 0.2 / len(signs_2ord)
+                signs_count += 0.6 / len(signs_2ord)
     return signs_count
 
 month_words_to_numbers = [
