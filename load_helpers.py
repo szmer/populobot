@@ -59,12 +59,12 @@ heading_antisigns = ([
     ]
     +
     # verb endings
-    [re.compile(s) for s in ['[aeu]j[ąe][,\.\\s]', '[ae]my[,\.\\s]', '[aeyi]ć[,\.\\s]', '[iyaeąę]ł[ay]?[,\.\\s]', '[iae[iaeąę]]li?[,\.\\s]', '[sś]my[,\.\\s]', 'ąc[aey]?[mj]?u?[,\.\\s]', '[aoe]n[yieaą]?[jm]?[,\.\\s]', 'wszy[,\.\\s]', 'eni[ea]m?[,\.\\s]']]
+    [re.compile(s) for s in ['[aeu]j[ąe][,\.\\s]', '[ae]my[,\.\\s]', '[aeyi]ć[,\.\\s]', '[iyaeąę]ł[ay]?[,\.\\s]', '[iae[iaeąę]]li?[,\.\\s]', '[sś]my[,\.\\s]', 'ąc[aey]?[mj]?u?[,\.\\s]', '[aoe]n[yieaą][jm]?[,\.\\s]', 'wszy[,\.\\s]', 'eni[ea]m?[,\.\\s]']]
     +
     # other out of place vocabulary
     [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor']])
 
-def heading_score(section, config):
+def heading_score(section, config, verbose=False):
     if len(section) < 15 or len(section) > config['max_heading_len']:
         return -1.5
 
@@ -73,25 +73,37 @@ def heading_score(section, config):
 
     signs_1ord = [s.search(section) for s in heading_signs_1ord]
     signs_1ord_count = len([s for s in signs_1ord if s])
+    if verbose:
+        print('+{:.1f} from first-order signs'.format(signs_1ord_count))
     signs_2ord = [s.search(section) for s in heading_signs_2ord]
     signs_2ord_count = len([s for s in signs_2ord if s])
+    if verbose:
+        print('+{:.1f} from second-order signs'.format(signs_2ord_count))
     if signs_1ord_count == 0:
         signs_2ord_count -= 1.5
+        if verbose:
+            print('-1.5 from no first-order signs')
     signs_count = signs_1ord_count + signs_2ord_count
     antisigns = [s.search(section) for s in heading_antisigns]
-    antisigns_count = len([s for s in antisigns if s])
+    antisigns_count = len([s for s in antisigns if s]) * 0.6
+    if verbose:
+        print('-{:.1f} from anti-signs {}'.format(antisigns_count, [s.group(0) for s in antisigns if s]))
     # If the first letter is not uppercase, it's a strong signal against.
     try:
         first_letter = re.search('[^\\W\\d_]', section).group(0)
         if first_letter.lower() == first_letter:
+            if verbose:
+                print('-1.0 lowercase')
             antisigns_count += 1
     # Penalize also no-letter sections if such are found.
     except AttributeError:
         antisigns_count += 1
     signs_count -= antisigns_count
 ###    print(section, signs_count, 'signs')
-    # To be positive, the signs count must be more than a factor dependent on section length.
-    return signs_count - (len(section) / 50)
+    # To be positive, the signs count must be more than a factor dependent on section length
+    if verbose:
+        print('-{:.1f} from section length'.format((len(section) / 70)))
+    return signs_count - (len(section) / 70)
 
 def doc_beginning_score(section, config):
     signs_count = -0.5
@@ -101,7 +113,7 @@ def doc_beginning_score(section, config):
         signs_count += 0.3
         for sign in signs_2ord:
             if section.lower().find(sign):
-                signs_count += 0.6 / len(signs_2ord)
+                signs_count += 0.3 / len(signs_2ord)
     return signs_count
 
 month_words_to_numbers = [
