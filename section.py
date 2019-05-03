@@ -1,4 +1,5 @@
 import csv, io
+from load_helpers import extract_dates
 
 # Section class template.
 class Section():
@@ -24,6 +25,22 @@ class Section():
             self.text
             ])
         return string_output.getvalue().strip()
+
+    def guess_date(self):
+        """Given the own title and document content, try to guess the date on which the document was created. Return the date that was chosen or False, if none was."""
+        # First, try to return the earliest (full) date from the title.
+        title_dates = extract_dates(self.section_title)
+        sorted_dates = sorted([(d, m, y) for (d, m, y) in title_dates if y <= 1795], key=lambda x: x[2])
+        if len(sorted_dates) > 0:
+            self.date = sorted_dates[0]
+            return self.date
+        # If the title yields nothing, try the content - the first date that appears in the document.
+        content_dates = extract_dates(self.text)
+        sorted_dates = [(d, m, y) for (d, m, y) in content_dates if y <= 1795]
+        if len(sorted_dates) > 0:
+            self.date = sorted_dates[0]
+            return self.date
+        return False
 
     @classmethod
     def new(cls, config, section_type, section_title, section_contents, section_id, document_id=False):

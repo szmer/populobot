@@ -1,20 +1,31 @@
-import json, os, re
-from load_helpers import heading_score, doc_beginning_score, is_meta_fragment
-from sys import argv, exit
+import argparse, json, os, re
+from collections import defaultdict
+from load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match
 
 from section import Section
+from manual_decision import SectionDecision, DateDecision
 
-if len(argv) != 2:
-    print('USAGE: python3 load.py CONFIG_FILE')
-    exit(-1)
+argparser = argparse.ArgumentParser(description='Load and index an edition of sejmik resolutions from scanned pages.')
+argparser.add_argument('config_file_path')
+argparser.add_argument('--manual_decisions_file', '-m')
 
-config_file_path = argv[1]
+args = argparser.parse_args()
 
 # Load the config
 config = None
-with open(config_file_path) as config_file:
+with open(args.config_file_path) as config_file:
     config = json.loads(config_file.read())
 
+# Load the manual decisions.
+manual_decisions = defaultdict(list) # page number -> a list of decisions
+# TODO unsketch!
+if args.manual_decisions_file:
+    with open(args.manual_decisions_file) as decisions_file:
+        for sth in decisions_file:
+            date_dec = DateDecision(sth)
+            section_dec = SectionDecision(sth)
+            manual_decisions[date_dec.pagenum].append(date_dec)
+            manual_decisions[section_dec.pagenum].append(section_dec)
 
 # Load all the files.
 pages = [] # as lists of lines
@@ -42,8 +53,9 @@ current_document_id = 0
 # Section id is just len(sections).
 previous_heading_score = 0 # we keep it so it can be improved by beginning paragraph detection.
 possible_heading = False
-for page in pages:
+for page_n, page in enumerate(pages):
     paragraphs = page.split('\n\n')
+    page_decisions = manual_decisions[page_n]
     for paragraph in paragraphs:
         commit_previous = False # we need to do that if we've encountered a heading
         new_title = False # we will store it here to set after commiting the previous one
@@ -75,6 +87,13 @@ for page in pages:
                                        current_document_section,#.replace('- ', ''),
                                        len(sections),
                                        document_id=current_document_id)
+                    corrected_date = False
+                    for decision in page_decisions:
+                        if decision.decision_type == 'date' and fuzzy_match(decision.from_title(), current_document_data['title']):
+                            section.date = decision.date
+                            corrected_date = True
+                    if not corrected_date:
+                        section.guess_date()
                     sections.append(section)
                     current_document_section = ''
                     current_document_id += 1
