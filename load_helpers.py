@@ -1,4 +1,4 @@
-import re, roman
+import doctest, re, roman
 
 MONTHS = '(stycze?[nń])|(luty?)|(marz?e?c)|(kwie[tc]i?e?[nń])|(maj)|(czerwi?e?c)|(lipi?e?c)|(sierpi?e?[nń])|(wrze[sś]i?e?[nń])|(październik)|(listopad)|(grudz?i?e?[nń])|([ji]anuar)|(februar)|(mart)|(april)|(mai)|([ji]u[nl]i)|(august)|(septemb)|(octob)|(decemb)'
 
@@ -141,18 +141,26 @@ month_words_to_numbers = [
         ('grud', 12),
         ('dece', 12),
         ]
-def extract_dates(title_str):
+def extract_dates(title_str, verbose=False):
+    """Find dates in string and return them as a list of triples (day, month, year).
+
+    >>> extract_dates("4. U niwe-rsal zjazdu do starostów o dawanie pomocy posłom, wysłanym do k-ro'lewnej Anny do Płocka, z Osieka- 4 października 1572 -r. eis huiuscemodi litteris. Uw. Po akcie pomieszczone ~w rękopisie. mz k. 72—72")
+    [(4, 10, 1572)]
+    >>> extract_dates('9 V 1955')
+    [(9, 5, 1955)]
+    """
     dates = []
-    title_str = title_str.lower()
     month_words = re.compile(MONTHS) # from global
     month_romandigs = re.compile('[xXvViI]{1,3}')
-    for find in list(month_words.finditer(title_str)) + list(month_romandigs.finditer(title_str)):
+    for find in list(month_words.finditer(title_str.lower())) + list(month_romandigs.finditer(title_str)):
         month_number = False
         year_number = False
         day_number = False
 
         # try to extract month
         found_month = find.group(0)
+        if verbose:
+            print('{} - month candidate'.format(found_month))
         if not month_romandigs.match(found_month):
             for (cue, number) in month_words_to_numbers:
                 if cue in found_month.replace('i', 'j'):
@@ -165,30 +173,48 @@ def extract_dates(title_str):
                 pass
         if not month_number:
             continue
+        if verbose:
+            print('{} - month number'.format(month_number))
 
         # try to extract year
         next_space_ind = find.end() + title_str[find.end():].find(' ')
         if next_space_ind == -1:
+            if verbose:
+                print('beginning of the string, aborted')
             continue
+        # Note thet this should work "automagically" at the end of a string.
         expected_year_str = title_str[next_space_ind+1:next_space_ind+5]
+        if verbose:
+            print('{} - expected year string'.format(expected_year_str))
         if re.match('^\\d+$', expected_year_str):
             year_number = int(expected_year_str)
         else:
             continue
+        if verbose:
+            print('{} - year number'.format(year_number))
 
         # try to extract day
         prev_space_ind = title_str[:find.start()].rfind(' ')
         if prev_space_ind == -1:
+            if verbose:
+                print('beginning of the string, aborted')
             continue
-        expected_day_str = title_str[prev_space_ind-3:prev_space_ind-1]
-        short_expected_day_str = title_str[prev_space_ind-2:prev_space_ind-1]
+        expected_day_str = title_str[prev_space_ind-2:prev_space_ind]
+        short_expected_day_str = title_str[prev_space_ind-1:prev_space_ind]
+        if verbose:
+            print('{} - expected day string, may be 1 shorter'.format(expected_day_str))
         if re.match('^\\d+$', expected_day_str):
             day_number = int(expected_day_str)
         elif re.match('^\\d+$', short_expected_day_str):
             day_number = int(short_expected_day_str)
         else:
             continue
+        if verbose:
+            print('{} - day number'.format(day_number))
+            print('Date found: {}'.format(day_number, month_number, year_number))
 
         dates.append((day_number, month_number, year_number))
 
     return dates
+
+doctest.testmod()
