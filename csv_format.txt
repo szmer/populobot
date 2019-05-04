@@ -2,8 +2,7 @@ Columns:
 book title
 in book section id (meta and non-meta)
 in book document id
-scan pages (first-last)
-book pages (first-last)
+scan page
 title of the section in the book
 section type (resolution etc.)
 date (dd-mm-yyyy)
@@ -11,4 +10,4 @@ palatinate
 location (convent area)
 location where created
 author
-text (lines unwrapped, segment|tag, newlines as \n, non-Polish passages in $dollar signs$)
+paragraph text (theoretically lines unwrapped, segment|tag, newlines as \n, non-Polish passages in $dollar signs$)

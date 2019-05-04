@@ -1,9 +1,12 @@
 # The pagenum should reflect the actual order of pages (zero-based), not the filenames.
-# The preceding and following fragments should be 80 chars in length.
+#
+# The preceding and following fragments should be at most 80 chars in length,
+# taking only the immediately adjacent paragraphs.
 
 class MergeSectionDecision():
     def __init__(self, decision_type, from_title, pagenum, preceding_fragm, following_fragm):
         self.decision_type = 'merge_sections'
+        # Any section can be merged, but always with the previous document section.
         self.from_title = from_title
         self.pagenum = int(pagenum)
         self.preceding_fragm = preceding_fragm
