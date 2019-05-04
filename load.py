@@ -50,6 +50,7 @@ current_document_data = clear_document_data
 current_document_section = '' 
 sections = []
 current_document_id = 0
+latest_doc_section_n = False
 # Section id is just len(sections).
 previous_heading_score = 0 # we keep it so it can be improved by beginning paragraph detection.
 possible_heading = False
@@ -61,7 +62,26 @@ for page_n, page in enumerate(pages):
         new_title = False # we will store it here to set after commiting the previous one
         if is_meta_fragment(paragraph, config):
             section = Section.new(config, 'meta', '', paragraph, len(sections))
-            sections.append(section)
+            # A meta section is one paragraph long and cannot be split, but it
+            # can be merged.
+            merged_with_previous = False
+            for decision in page_decisions:
+                # Merge decisions.
+                if (decision.decision_type == 'merge_sections' and latest_doc_section_n
+                        and fuzzy_match(decision.from_title, current_document_data['title'])
+                        and fuzzy_match(decision.following_fragm, current_document_section[:80])
+                        and fuzzy_match(decision.preceding_fragm, sections[latest_doc_section_n].text[-80:])):
+                    # Add both the title and the contents to the
+                    # previous section.
+                    additional_sections = sections[latest_doc_section_n].add_to_text(
+                            (current_document_data['title'] + current_document_section),
+                            page_decisions, config, len(sections), current_document_id)
+                    sections += additional_sections
+                    current_document_id += len([sec for sec
+                        in additional_sections if sec.section_type == 'document'])
+                    merged_with_previous = True
+            if not merged_with_previous:
+                sections.append(section)
         else:
             # If it's not meta, handle the case where there might have been a heading previosly.
             # Note that all document paragraphs pass through here
@@ -84,19 +104,48 @@ for page_n, page in enumerate(pages):
             if current_document_data['title'] != '':
                 if current_document_section != '':
                     section = Section.new(config, 'document', current_document_data['title'],
-                                       current_document_section,#.replace('- ', ''),
+                                       '', # leave empty for now
                                        len(sections),
                                        document_id=current_document_id)
+
+                    # Apply corrections before adding the text and commiting
+                    # (split decisions will be applied then).
                     corrected_date = False
+                    merged_with_previous = False
                     for decision in page_decisions:
+                        # Merge decisions.
+                        if (decision.decision_type == 'merge_sections' and latest_doc_section_n
+                                and fuzzy_match(decision.from_title, current_document_data['title'])
+                                and fuzzy_match(decision.following_fragm, current_document_section[:80])
+                                and fuzzy_match(decision.preceding_fragm, sections[latest_doc_section_n].text[-80:])):
+                            # Add both the title and the contents to the
+                            # previous section.
+                            additional_sections = sections[latest_doc_section_n].add_to_text(
+                                    (current_document_data['title'] + current_document_section),
+                                    page_decisions, config, len(sections), current_document_id)
+                            sections += additional_sections
+                            current_document_id += len([sec for sec
+                                in additional_sections if sec.section_type == 'document'])
+                            merged_with_previous = True
+                        # Date decisions.
                         if decision.decision_type == 'date' and fuzzy_match(decision.from_title(), current_document_data['title']):
                             section.date = decision.date
                             corrected_date = True
-                    if not corrected_date:
-                        section.guess_date()
-                    sections.append(section)
+
+                    if not merged_with_previous:
+                        # Finally add the text content.
+                        additional_sections = sections[latest_doc_section_n].add_to_text(
+                                current_document_section,
+                                page_decisions, config, len(sections), current_document_id)
+                        sections += additional_sections
+                        current_document_id += len([sec for sec
+                            in additional_sections if sec.section_type == 'document'])
+                        if not corrected_date:
+                            section.guess_date()
+                        latest_doc_section_n = len(sections)
+                        sections.append(section)
+                        current_document_id += 1
                     current_document_section = ''
-                    current_document_id += 1
                 # If there is no document content, add it as a meta section.
                 else:
                     section = Section.new(config, 'meta', current_document_data['title'], '', len(sections))
