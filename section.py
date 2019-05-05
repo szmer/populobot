@@ -10,7 +10,6 @@ class Section():
             csv_writer = csv.writer(string_output, quoting=csv.QUOTE_NONNUMERIC)
             csv_writer.writerow([
                 self.book_title,
-                scan_page,
                 self.inbook_section_id,
                 self.inbook_document_id,
                 scan_page,
@@ -27,6 +26,12 @@ class Section():
 
     def collapsed_text(self):
         return '\n\n'.join([par for (pg, par) in self.pages_paragraphs[1:]])
+
+    def title(self):
+        if len(self.pages_paragraphs) > 0:
+            return self.pages_paragraphs[0]
+        else:
+            return ''
 
     def add_to_text(self, new_pages_paragraphs, page_decisions, config, section_n, document_n):
         """Add the new_text to section text. If there are new sections splitted, they are returned as a list."""
@@ -103,6 +108,8 @@ class Section():
         self.author = config['default_convent_author']
         # This is expected to be a list of pairs (scanpage_num, paragraph).
         self.pages_paragraphs = section_content
+#        if section_id == 23:
+#            fail()
         return self
 
     @classmethod

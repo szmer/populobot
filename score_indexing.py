@@ -1,7 +1,7 @@
-import argparse, csv, json
+import argparse, json
 from math import sqrt
 
-from section import Section
+from indexing_common import load_document_sections
 
 argparser = argparse.ArgumentParser(description='Score quality of document indexing.')
 argparser.add_argument('--print-titles', '-t', action='store_true')
@@ -16,15 +16,7 @@ with open(args.config_path) as config_file:
     config = json.loads(config_file.read())
 
 # Load document sections from the csv
-document_sections = []
-with open(args.csv_path) as csv_file:
-    csv_reader = csv.reader(csv_file)
-    for row in csv_reader:
-        section = Section.from_csv_row(row)
-        if section.section_type == 'document':
-            if args.print_titles:
-                print(section.section_title)
-            document_sections.append(section)
+document_sections = load_document_sections(args.csv_path, print_titles=args.print_titles)
 
 # Collect document lengths from both sources.
 true_document_lengths = []
@@ -32,7 +24,7 @@ prev_pagenum = config['dev__true_document_pages'][0]
 for pagenum in config['dev__true_document_pages'][1:]:
     true_document_lengths.append(pagenum-prev_pagenum+1)
     prev_pagenum = pagenum
-csv_document_lengths = [len(sec.text) for sec in document_sections]
+csv_document_lengths = [len(sec.collapsed_text()) for sec in document_sections]
 
 # Scale the indexed lengths as we would be distributing pages from the original index.
 scaled_document_lengths = [l / sum(csv_document_lengths) * sum(true_document_lengths)
