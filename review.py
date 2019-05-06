@@ -1,7 +1,7 @@
 import argparse
-from queue import Queue
 from cmd import Cmd
 from copy import copy, deepcopy
+import yaml
 
 from indexing_common import load_indexed
 from manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision, PertinenceDecision
@@ -15,8 +15,8 @@ args = argparser.parse_args()
 edition_sections = load_indexed(args.parsed_file_path)
 current_section_n = 0
 # Here we store decisions paired with states of edition_sections that preceded them.
-undo_queue = Queue()
-redo_queue = Queue()
+undo_queue = []
+redo_queue = []
 # At the end, we just treat the undo queue as the source of all decisions made.
 
 def saved_section_list(saved_section_n):
@@ -39,9 +39,9 @@ class ReviewShell(Cmd):
     def commit_save(self, decision, sections_state):
         """Handle the undo and redo queues for the decision and sections
         state that was already saved by the caller."""
-        undo_queue.put((decision, sections_state))
+        undo_queue.append((decision, sections_state))
         global redo_queue
-        redo_queue = Queue()
+        redo_queue = []
 
     def do_section(self, ignored_args):
         """Print basic information on the current section."""
@@ -95,9 +95,9 @@ class ReviewShell(Cmd):
     def do_undo(self, ignored_args):
         """Undo the last correction decision."""
         global edition_sections
-        if not undo_queue.empty():
-            undone_state = undo_queue.get()
-            redo_queue.put((undone_state[0], edition_sections))
+        if not undo_queue == []:
+            undone_state = undo_queue.pop()
+            redo_queue.append((undone_state[0], edition_sections))
             # Revert to the remembered state.
             edition_sections = undone_state[1]
             print('Undone {}'.format(vars(undone_state[0])))
@@ -107,14 +107,24 @@ class ReviewShell(Cmd):
     def do_redo(self, ignored_args):
         """Redo the last cancelled correction decision."""
         global edition_sections
-        if not redo_queue.empty():
-            redone_state = redo_queue.get()
-            undo_queue.put((redone_state[0], edition_sections))
+        if not redo_queue == []:
+            redone_state = redo_queue.pop()
+            undo_queue.append((redone_state[0], edition_sections))
             # Revert to the remembered state.
             edition_sections = redone_state[1]
             print('Redone {}'.format(vars(redone_state[0])))
         else:
             print('Redo queue is empty')
+
+    def do_write(self, filepath):
+        """Save the decisions to a YAML file at the given file path."""
+        if filepath == '':
+            print('You need to supply a filepath.')
+        decisions = [dec for (dec, stack) in undo_queue]
+        output = yaml.dump(decisions, Dumper=yaml.Dumper, encoding='utf-8')
+        with open(filepath, 'w+') as out:
+            out.write(output.decode('utf-8'))
+        print('{} decisions written to {}.'.format(len(decisions), filepath))
 
     #
     # Applying correction decisions.
@@ -181,8 +191,8 @@ class ReviewShell(Cmd):
             sections_state = saved_section_list(previous_document_n)
             section = edition_sections[current_section_n]
             decision = MergeSectionDecision(section.title(), section.pages_paragraphs[0][0],
-                    edition_sections[previous_document_n].pages_paragraphs[-1][-80:],
-                    section.pages_paragraphs[0][:80])
+                    edition_sections[previous_document_n].pages_paragraphs[-1][1][-80:],
+                    section.pages_paragraphs[0][1][:80])
             edition_sections[previous_document_n].pages_paragraphs += edition_sections[current_section_n].pages_paragraphs
             del edition_sections[current_section_n]
             current_section_n = previous_document_n

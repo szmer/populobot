@@ -1,9 +1,10 @@
 import argparse, json, os, re
 from collections import defaultdict
 from load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match
+import yaml
 
 from section import Section
-from manual_decision import MergeSectionDecision, SplitSectionDecision, DateDecision
+#import manual_decision
 
 argparser = argparse.ArgumentParser(description='Load and index an edition of sejmik resolutions from scanned pages.')
 argparser.add_argument('config_file_path')
@@ -18,15 +19,11 @@ with open(args.config_file_path) as config_file:
 
 # Load the manual decisions.
 manual_decisions = defaultdict(list) # page number -> a list of decisions
-# TODO unsketch!
 if args.manual_decisions_file:
     with open(args.manual_decisions_file) as decisions_file:
-        for sth in decisions_file:
-            date_dec = DateDecision(sth)
-            section_dec = SplitSectionDecision(sth)
-            section_dec = MergeSectionDecision(sth)
-            manual_decisions[date_dec.pagenum].append(date_dec)
-            manual_decisions[section_dec.pagenum].append(section_dec)
+        all_decisions = yaml.load(decisions_file, Loader=yaml.Loader)
+        for decision in all_decisions:
+            manual_decisions[decision.pagenum].append(decision)
 
 # Load all the files.
 pages = [] # as lists of lines
