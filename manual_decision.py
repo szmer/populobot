@@ -4,29 +4,22 @@
 # taking only the immediately adjacent paragraphs.
 
 class MergeSectionDecision():
-    def __init__(self, decision_type, from_title, pagenum, preceding_fragm, following_fragm):
+    def __init__(self, from_title, pagenum, preceding_fragm, following_fragm):
         self.decision_type = 'merge_sections'
         # Any section can be merged, but always with the previous document section.
         self.from_title = from_title
-        self.pagenum = int(pagenum)
+        self.pagenum = int(pagenum) # the pagenum where merge happens
         self.preceding_fragm = preceding_fragm
         self.following_fragm = following_fragm
 
 class SplitSectionDecision():
-    def __init__(self, decision_type, from_title, pagenum, preceding_fragm, following_fragm,
-            new_section_type, new_title):
+    def __init__(self, from_title, pagenum, preceding_fragm, following_fragm,
+            new_section_type):
         self.decision_type = 'merge_sections'
         self.from_title = from_title
-        self.pagenum = int(pagenum)
+        self.pagenum = int(pagenum) # the pagenum where split happens
         self.preceding_fragm = preceding_fragm
         self.following_fragm = following_fragm
-        # In meta sections, headings (titles) of document sections that would be
-        # empty are section titles with empty contents. New_title is set for
-        # meta sections only in those cases. Otherwise these sections are untitled.
-        #
-        # If there is no new title in the correction, we are meant to treat the
-        # current paragraph in text as the potential next one instead of a new title.
-        self.new_title = new_title
         self.new_section_type = new_section_type
 
 class DateDecision():

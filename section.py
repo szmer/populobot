@@ -50,9 +50,7 @@ class Section():
                 for corr in split_decisions:
                     if (fuzzy_match(corr.from_title, self.pages_paragraphs[0][1])
                             and fuzzy_match(corr.preceding_fragm, pages_paragraphs[parag_n-1][1][-80:])
-                            and ((corr.new_title != '' and fuzzy_match(corr.new_title, paragraph)
-                                and fuzzy_match(corr.following_fragm, pages_paragraphs[parag_n+1][1][:80]))
-                                or (corr.new_title == '' and fuzzy_match(corr.following_fragm, paragraph)))):
+                            and fuzzy_match(corr.following_fragm, paragraph)):
                         if corr.new_section_type == 'document':
                             new_section = Section.new(config, 'document',
                                     [(scan_page, paragraph)],
