@@ -19,7 +19,8 @@ class Section():
                 self.convent_location,
                 self.created_location,
                 self.author,
-                paragraph
+                paragraph,
+                self.pertinence
                 ])
             rows.append(string_output.getvalue().strip())
         return rows
@@ -93,7 +94,7 @@ class Section():
         pass
 
     @classmethod
-    def new(cls, config, section_type, section_content, section_id, document_id=False):
+    def new(cls, config, section_type, section_content, section_id, document_id=False, pertinence='default'):
         self = cls()
         self.book_title = config['book_title']
         self.inbook_section_id = section_id
@@ -106,6 +107,13 @@ class Section():
         self.author = config['default_convent_author']
         # This is expected to be a list of pairs (scanpage_num, paragraph).
         self.pages_paragraphs = section_content
+        if pertinence == 'default':
+            if section_type == 'document':
+                self.pertinence = True
+            else:
+                self.pertinence = False
+        else:
+            self.pertinence = pertinence
 #        if section_id == 23:
 #            fail()
         return self
@@ -125,6 +133,7 @@ class Section():
         self.created_location = row[8]
         self.author = row[9]
         self.pages_paragraphs = [(int(row[3]), row[10])]
+        self.pertinence = bool(row[11])
         return self
 
     def append_csv_row(self, row):

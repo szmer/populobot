@@ -141,6 +141,9 @@ for page_n, page in enumerate(pages):
                     if decision.decision_type == 'date' and fuzzy_match(decision.from_title(), current_document_data['title']):
                         section.date = decision.date
                         corrected_date = True
+                    # Pertinence decisions.
+                    if decision.decision_type == 'pertinence' and fuzzy_match(decision.from_title, current_document_data['title']):
+                        section.pertinence = decision.pertinence_status
 
                 if not merged_with_previous:
                     # Finally add the text content.

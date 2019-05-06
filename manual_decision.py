@@ -28,3 +28,9 @@ class DateDecision():
         self.date = date
         self.from_title = from_title
         self.pagenum = int(pagenum)
+
+class PertinenceDecision():
+    def __init__(self, pertinence_status, from_title, pagenum):
+        self.decision_type = 'pertinence'
+        self.from_title = from_title
+        self.pagenum = int(pagenum)

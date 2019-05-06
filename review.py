@@ -4,7 +4,7 @@ from cmd import Cmd
 from copy import copy, deepcopy
 
 from indexing_common import load_indexed
-from manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision
+from manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision, PertinenceDecision
 
 argparser = argparse.ArgumentParser(description='Review and correct source edition indexing performed by the loading script.')
 argparser.add_argument('parsed_file_path')
@@ -26,9 +26,13 @@ def saved_section_list(saved_section_n):
 
 class ReviewShell(Cmd):
     prompt = '(review) '
+    intro = ('Welcome to populobot review.\n'
+            'Documents with asterisk are marked as nonpertinent.')
 
     def print_section(self, section_n):
-        print('{} {}'.format(edition_sections[section_n].section_type.upper(),
+        print('{}{} {}'.format(edition_sections[section_n].section_type.upper(),
+            ('*' if edition_sections[section_n].section_type == 'document'
+            and not edition_sections[section_n].pertinence else ''),
             edition_sections[section_n].pages_paragraphs[0][1][:100]))
         print('Dated: {}'.format(edition_sections[section_n].date))
 
@@ -115,6 +119,42 @@ class ReviewShell(Cmd):
     #
     # Applying correction decisions.
     #
+    def do_pert(self, ignored_args):
+        """Mark the current section as pertinent (works for documents)."""
+        global current_section_n
+        section = edition_sections[current_section_n]
+        if section.section_type != 'document':
+            print('Pertinence decisions are applicable only for document sections.')
+            return
+        if section.pertinence == True:
+            print('The section is already marked as pertinent.')
+            return
+        sections_state = saved_section_list(current_section_n)
+        decision = PertinenceDecision(True,
+                section.pages_paragraphs[0][1],
+                section.pages_paragraphs[0][0])
+        section.pertinence = True
+        self.commit_save(decision, sections_state)
+        self.do_section('')
+
+    def do_npert(self, ignored_args):
+        """Mark the current section as nonpertinent (works for documents)."""
+        global current_section_n
+        section = edition_sections[current_section_n]
+        if section.section_type != 'document':
+            print('Pertinence decisions are applicable only for document sections.')
+            return
+        if section.pertinence == False:
+            print('The section is already marked as nonpertinent.')
+            return
+        sections_state = saved_section_list(current_section_n)
+        decision = PertinenceDecision(False,
+                section.pages_paragraphs[0][1],
+                section.pages_paragraphs[0][0])
+        section.pertinence = False
+        self.commit_save(decision, sections_state)
+        self.do_section('')
+
     def do_date(self, newdate):
         """Manually assign a date to the current document. The date should be
         supplied as DD-MM-YYYY, without zeros."""
