@@ -3,8 +3,7 @@ from collections import defaultdict
 from load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match
 import yaml
 
-from section import Section
-#import manual_decision
+from popbot_src.section import Section
 
 argparser = argparse.ArgumentParser(description='Load and index an edition of sejmik resolutions from scanned pages.')
 argparser.add_argument('config_file_path')

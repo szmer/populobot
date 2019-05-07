@@ -3,8 +3,8 @@ from cmd import Cmd
 from copy import copy, deepcopy
 import yaml
 
-from indexing_common import load_indexed
-from manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision, PertinenceDecision
+from popbot_src.indexing_common import load_indexed
+from popbot_src.manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision, PertinenceDecision
 
 argparser = argparse.ArgumentParser(description='Review and correct source edition indexing performed by the loading script.')
 argparser.add_argument('parsed_file_path')

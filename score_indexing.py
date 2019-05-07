@@ -1,7 +1,7 @@
 import argparse, json
 from math import sqrt
 
-from indexing_common import load_document_sections
+from popbot_src.indexing_common import load_document_sections
 
 argparser = argparse.ArgumentParser(description='Score quality of document indexing.')
 argparser.add_argument('--print-titles', '-t', action='store_true')

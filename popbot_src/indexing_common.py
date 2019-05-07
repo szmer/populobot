@@ -1,5 +1,5 @@
 import csv
-from section import Section
+from popbot_src.section import Section
 
 def load_indexed(csv_path):
     edition_sections = []
