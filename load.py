@@ -1,9 +1,9 @@
 import argparse, json, os, re
 from collections import defaultdict
-from load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match
 import yaml
 
 from popbot_src.section import Section
+from popbot_src.load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match
 
 argparser = argparse.ArgumentParser(description='Load and index an edition of sejmik resolutions from scanned pages.')
 argparser.add_argument('config_file_path')
