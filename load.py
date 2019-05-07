@@ -146,15 +146,18 @@ for page_n, page in enumerate(pages):
                     # Finally add the text content.
                     additional_sections = section.add_to_text(
                             current_document_paragraphs,
-                            manual_decisions, config, len(sections), current_document_id)
+                            manual_decisions, config,
+                            # indices need to be already incremented for the
+                            # main section that we will add
+                            len(sections)+1, current_document_id+1)
+                    if not corrected_date:
+                        section.guess_date()
+                    sections.append(section)
+                    current_document_id += 1
                     sections += additional_sections
                     current_document_id += len([sec for sec
                         in additional_sections if sec.section_type == 'document'])
-                    if not corrected_date:
-                        section.guess_date()
-                    latest_doc_section_n = len(sections)
-                    sections.append(section)
-                    current_document_id += 1
+                    latest_doc_section_n = str([s.section_type[0] for s in sections]).rfind('d')
                 current_document_paragraphs = [(page_n, new_title)]
             # If there is no document content, add it as a meta section.
             else:
