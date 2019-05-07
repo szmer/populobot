@@ -220,6 +220,6 @@ def extract_dates(string, verbose=False):
 def fuzzy_match(str1, str2):
     """For now, fuzzy match is actually exact."""
     # TODO make it fuzzy.
-    return str1 == str2
+    return re.sub('\\s|(\\\\n)', '', str1) == re.sub('\\s|(\\\\n)', '', str2)
 
 doctest.testmod()

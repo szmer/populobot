@@ -141,8 +141,8 @@ class ReviewShell(Cmd):
             return
         sections_state = saved_section_list(current_section_n)
         decision = PertinenceDecision(True,
-                section.pages_paragraphs[0][1],
-                section.pages_paragraphs[0][0])
+                section.title(),
+                section.end_page())
         section.pertinence = True
         self.commit_save(decision, sections_state)
         self.do_section('')
@@ -159,8 +159,8 @@ class ReviewShell(Cmd):
             return
         sections_state = saved_section_list(current_section_n)
         decision = PertinenceDecision(False,
-                section.pages_paragraphs[0][1],
-                section.pages_paragraphs[0][0])
+                section.title(),
+                section.end_page())
         section.pertinence = False
         self.commit_save(decision, sections_state)
         self.do_section('')
@@ -173,7 +173,7 @@ class ReviewShell(Cmd):
         sections_state = saved_section_list(current_section_n)
         section = edition_sections[current_section_n]
         section.date = formatted_date
-        decision = DateDecision(formatted_date, section.title(), section.pages_paragraphs[0][0])
+        decision = DateDecision(formatted_date, section.title(), section.end_page())
         self.commit_save(decision, sections_state)
         self.do_section('')
 
@@ -190,7 +190,7 @@ class ReviewShell(Cmd):
             # will be actually modified.
             sections_state = saved_section_list(previous_document_n)
             section = edition_sections[current_section_n]
-            decision = MergeSectionDecision(section.title(), section.pages_paragraphs[0][0],
+            decision = MergeSectionDecision(section.title(), section.end_page(),
                     edition_sections[previous_document_n].pages_paragraphs[-1][1][-80:],
                     section.pages_paragraphs[0][1][:80])
             edition_sections[previous_document_n].pages_paragraphs += edition_sections[current_section_n].pages_paragraphs

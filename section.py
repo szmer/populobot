@@ -30,14 +30,23 @@ class Section():
 
     def title(self):
         if len(self.pages_paragraphs) > 0:
-            return self.pages_paragraphs[0]
+            return self.pages_paragraphs[0][1]
         else:
             return ''
 
-    def add_to_text(self, new_pages_paragraphs, page_decisions, config, section_n, document_n):
-        """Add the new_text to section text. If there are new sections splitted, they are returned as a list."""
+    def end_page(self):
+        return self.pages_paragraphs[-1][0]
+
+    def add_to_text(self, new_pages_paragraphs, manual_decisions, config, section_n, document_n):
+        """Add the new_text to section text. If there are new sections splitted,
+        they are returned as a list. The dictionary of all manual decisions
+        should be supplied as an argument."""
         additional_sections = []
-        split_decisions = [corr for corr in page_decisions if corr.decision_type=='split_sections']
+        split_decisions = []
+        for page_n in set([page_n for (page_n, par) in new_pages_paragraphs]):
+            for decision in manual_decisions[page_n]:
+                if decision.decision_type=='split_sections':
+                    split_decisions.append(decision)
         # Add own last paragraph for context checking.
         pages_paragraphs = (self.pages_paragraphs[-1:] if len(self.pages_paragraphs) > 0 else [(0, '')]) + new_pages_paragraphs
         split = False # indicates whether we need to place next parags in additional sections
@@ -48,23 +57,25 @@ class Section():
             if parag_n == 0:
                 continue
             if parag_n + 1 < len(pages_paragraphs):
-                for corr in split_decisions:
-                    if (fuzzy_match(corr.from_title, self.pages_paragraphs[0][1])
-                            and fuzzy_match(corr.preceding_fragm, pages_paragraphs[parag_n-1][1][-80:])
-                            and fuzzy_match(corr.following_fragm, paragraph)):
-                        if corr.new_section_type == 'document':
+                for decision in split_decisions:
+                    if (fuzzy_match(decision.from_title,
+                        # if we have no title here yet, get it from supplied new paragraphs
+                        self.pages_paragraphs[0][1] if len(self.pages_paragraphs) > 0 else pages_paragraphs[1][1])
+                            and fuzzy_match(decision.preceding_fragm, pages_paragraphs[parag_n-1][1][-80:])
+                            and fuzzy_match(decision.following_fragm, paragraph[:80])):
+                        if decision.new_section_type == 'document':
                             new_section = Section.new(config, 'document',
-                                    [(scan_page, paragraph)],
+                                    [],
                                     current_section_n,
                                     document_id=current_document_n)
                             current_document_n += 1
-                        elif corr.new_section_type == 'meta':
+                        elif decision.new_section_type == 'meta':
                             new_section = Section.new(config, 'meta',
-                                    [(scan_page, paragraph)],
+                                    [],
                                     current_section_n)
                         else:
                             raise NotImplementedError('requested section split with unknown section'
-                                    ' type {}'.format(corr.new_section_type))
+                                    ' type {}'.format(decision.new_section_type))
                         current_section_n += 1
                         additional_sections.append(new_section)
                         split = True
@@ -133,7 +144,7 @@ class Section():
         self.created_location = row[8]
         self.author = row[9]
         self.pages_paragraphs = [(int(row[3]), row[10])]
-        self.pertinence = bool(row[11])
+        self.pertinence = (row[11] == 'True')
         return self
 
     def append_csv_row(self, row):

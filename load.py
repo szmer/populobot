@@ -36,9 +36,6 @@ for dirname, dirnames, filenames in os.walk(config['path']):
                 pages.append(text_file.read())
 
 # Process content lines for files sequentially.
-clear_document_data = { 'title': '' }
-# (the current title is stored here in addition to the paragraph list)
-current_document_data = clear_document_data
 # We accumulate lines here until a heading or short line:
 current_document_paragraphs = [] # pairs (pagenum, paragraph)
 sections = []
@@ -72,14 +69,14 @@ for page_n, page in enumerate(pages):
             for decision in page_decisions:
                 # Merge decisions (it can be merged with the previous document).
                 if (decision.decision_type == 'merge_sections' and latest_doc_section_n
-                        and fuzzy_match(decision.from_title, '')
+                        and fuzzy_match(decision.from_title, paragraph)
                         and fuzzy_match(decision.following_fragm, paragraph[:80])
-                        and fuzzy_match(decision.preceding_fragm, sections[latest_doc_section_n].text[-80:])):
+                        and fuzzy_match(decision.preceding_fragm, sections[latest_doc_section_n].pages_paragraphs[-1][1][-80:])):
                     # Add both the title and the contents to the
                     # previous section.
                     additional_sections = sections[latest_doc_section_n].add_to_text(
-                            current_document_paragraphs,
-                            page_decisions, config, len(sections), current_document_id)
+                            [(page_n, paragraph)],
+                            manual_decisions, config, len(sections), current_document_id)
                     sections += additional_sections
                     current_document_id += len([sec for sec
                         in additional_sections if sec.section_type == 'document'])
@@ -120,33 +117,36 @@ for page_n, page in enumerate(pages):
                 for decision in page_decisions:
                     # Merge decisions.
                     if (decision.decision_type == 'merge_sections' and latest_doc_section_n
-                            and fuzzy_match(decision.from_title, current_document_data['title'])
-                            and fuzzy_match(decision.following_fragm, current_document_paragraphs[0][:80])
+                            and fuzzy_match(decision.from_title, current_document_paragraphs[0][1])
+                            and fuzzy_match(decision.following_fragm, current_document_paragraphs[0][1][:80])
                             and fuzzy_match(decision.preceding_fragm,
-                                sections[latest_doc_section_n].pages_paragraphs[-1][-80:])):
+                                sections[latest_doc_section_n].pages_paragraphs[-1][1][-80:])):
                         # Add both the title and the contents to the
                         # previous section.
                         additional_sections = sections[latest_doc_section_n].add_to_text(
                                 current_document_paragraphs,
-                                page_decisions, config, len(sections), current_document_id)
-                        sections[latest_doc_section_n].scan_pages[1] = page_n # TODO what if splitted
+                                manual_decisions, config, len(sections), current_document_id)
+                        sections[latest_doc_section_n].scan_pages[1] = page_n
                         sections += additional_sections
                         current_document_id += len([sec for sec
                             in additional_sections if sec.section_type == 'document'])
                         merged_with_previous = True
                     # Date decisions.
-                    if decision.decision_type == 'date' and fuzzy_match(decision.from_title(), current_document_data['title']):
+                    if decision.decision_type == 'date' and fuzzy_match(decision.from_title, current_document_paragraphs[0][1]):
                         section.date = decision.date
                         corrected_date = True
                     # Pertinence decisions.
-                    if decision.decision_type == 'pertinence' and fuzzy_match(decision.from_title, current_document_data['title']):
+                    if decision.decision_type == 'pertinence':
+                        print(decision.from_title)
+                        print(current_document_paragraphs[0][1])
+                    if decision.decision_type == 'pertinence' and fuzzy_match(decision.from_title, current_document_paragraphs[0][1]):
                         section.pertinence = decision.pertinence_status
 
                 if not merged_with_previous:
                     # Finally add the text content.
                     additional_sections = section.add_to_text(
                             current_document_paragraphs,
-                            page_decisions, config, len(sections), current_document_id)
+                            manual_decisions, config, len(sections), current_document_id)
                     sections += additional_sections
                     current_document_id += len([sec for sec
                         in additional_sections if sec.section_type == 'document'])
@@ -160,8 +160,6 @@ for page_n, page in enumerate(pages):
             else:
                 section = Section.new(config, 'meta', current_document_paragraphs, len(sections))
                 sections.append(section)
-            current_document_data = clear_document_data
-            current_document_data['title'] = new_title
 # If something remains in the document buffer, commit it.
 if possible_heading:
     if config.ignore_page_ranges:
