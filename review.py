@@ -54,6 +54,23 @@ class ReviewShell(Cmd):
         for par_n, (scanpage, paragraph) in enumerate(edition_sections[current_section_n].pages_paragraphs):
             print('{}: "{}"'.format(par_n, paragraph[:100]))
 
+    def do_full(self, paragraph_n):
+        """Print the full paragraph of the given number (the first/title by
+        default)."""
+        if paragraph_n == '':
+            paragraph_n = 0
+        else:
+            try:
+                paragraph_n = int(paragraph_n)
+            except ValueError:
+                print('Invalid paragraph number.')
+                return
+        global current_section_n
+        if paragraph_n >= len(edition_sections[current_section_n].pages_paragraphs):
+            print('There is no paragraph numbered {}.'.format(paragraph_n))
+            return
+        print(edition_sections[current_section_n].pages_paragraphs[paragraph_n][1])
+
     def do_near(self, ignored_args):
         """Preview nearest sections to the current one."""
         for section_n, section in enumerate(edition_sections):
@@ -178,6 +195,7 @@ class ReviewShell(Cmd):
         self.do_section('')
 
     def do_title(self, new_title):
+        """Manually assign a new title to the current section."""
         global current_section_n
         sections_state = saved_section_list(current_section_n)
         section = edition_sections[current_section_n]
