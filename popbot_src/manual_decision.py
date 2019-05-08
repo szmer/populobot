@@ -37,3 +37,10 @@ class PertinenceDecision():
         self.from_title = from_title
         self.pagenum = int(pagenum)
         self.pertinence_status = pertinence_status
+
+class TitleFormDecision():
+    def __init__(self, to_title, from_title, pagenum):
+        self.decision_type = 'title_form'
+        self.to_title = to_title
+        self.from_title = from_title
+        self.pagenum = int(pagenum)

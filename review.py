@@ -4,7 +4,7 @@ from copy import copy, deepcopy
 import yaml
 
 from popbot_src.indexing_common import load_indexed
-from popbot_src.manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision, PertinenceDecision
+from popbot_src.manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision, PertinenceDecision, TitleFormDecision
 
 argparser = argparse.ArgumentParser(description='Review and correct source edition indexing performed by the loading script.')
 argparser.add_argument('parsed_file_path')
@@ -174,6 +174,15 @@ class ReviewShell(Cmd):
         section = edition_sections[current_section_n]
         section.date = formatted_date
         decision = DateDecision(formatted_date, section.title(), section.end_page())
+        self.commit_save(decision, sections_state)
+        self.do_section('')
+
+    def do_title(self, new_title):
+        global current_section_n
+        sections_state = saved_section_list(current_section_n)
+        section = edition_sections[current_section_n]
+        decision = TitleFormDecision(new_title, section.title(), section.end_page())
+        section.pages_paragraphs[0] = (section.pages_paragraphs[0][0], new_title)
         self.commit_save(decision, sections_state)
         self.do_section('')
 

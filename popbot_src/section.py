@@ -77,6 +77,12 @@ class Section():
                             raise NotImplementedError('requested section split with unknown section'
                                     ' type {}'.format(decision.new_section_type))
                         current_section_n += 1
+                        # Check if there is a title form decision for this new section.
+                        for page_decision in manual_decisions[new_section.pages_paragraphs[0][0]]:
+                            if (page_decision.decision_type == 'title_form'
+                                    and fuzzy_match(new_section.pages_paragraphs[0][1], page_decision)):
+                                new_section.pages_paragraphs[0] = (new_section.pages_paragraphs[0][0],
+                                        decision.to_title)
                         additional_sections.append(new_section)
                         split = True
             if split:

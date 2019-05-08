@@ -80,6 +80,9 @@ for page_n, page in enumerate(pages):
                     current_document_id += len([sec for sec
                         in additional_sections if sec.section_type == 'document'])
                     merged_with_previous = True
+                if (decision.decision_type == 'title_form' 
+                        and fuzzy_match(decision.from_title, paragraph)):
+                    section.pages_paragraphs[0] = (section.pages_paragraphs[0][0], decision.to_title)
             if not merged_with_previous:
                 sections.append(section)
         else:
@@ -130,6 +133,11 @@ for page_n, page in enumerate(pages):
                         current_document_id += len([sec for sec
                             in additional_sections if sec.section_type == 'document'])
                         merged_with_previous = True
+                    # Title form decisions.
+                    if (decision.decision_type == 'title_form' 
+                            and fuzzy_match(decision.from_title, current_document_paragraphs[0][1])):
+                        current_document_paragraphs[0] = (current_document_paragraphs[0][0],
+                                decision.to_title)
                     # Date decisions.
                     if decision.decision_type == 'date' and fuzzy_match(decision.from_title, current_document_paragraphs[0][1]):
                         section.date = decision.date
