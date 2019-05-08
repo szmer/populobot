@@ -1,5 +1,5 @@
 import csv, io
-from load_helpers import extract_dates, fuzzy_match
+from popbot_src.load_helpers import extract_dates, fuzzy_match
 
 # Section class template.
 class Section():
