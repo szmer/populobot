@@ -69,9 +69,10 @@ class Section():
                                     current_section_n,
                                     document_id=current_document_n)
                             current_document_n += 1
+                            split = True
                         elif decision.new_section_type == 'meta':
                             new_section = Section.new(config, 'meta',
-                                    [],
+                                    [(scan_page, paragraph)],
                                     current_section_n)
                         else:
                             raise NotImplementedError('requested section split with unknown section'
@@ -84,7 +85,6 @@ class Section():
                                 new_section.pages_paragraphs[0] = (new_section.pages_paragraphs[0][0],
                                         decision.to_title)
                         additional_sections.append(new_section)
-                        split = True
             if split:
                 additional_sections[-1].pages_paragraphs.append((scan_page, paragraph))
             else:

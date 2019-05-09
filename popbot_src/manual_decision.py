@@ -14,9 +14,10 @@ class MergeSectionDecision():
         self.preceding_fragm = preceding_fragm
         self.following_fragm = following_fragm
 
+# NOTE splitting out a meta section does this only to one paragraph.
 class SplitSectionDecision():
     def __init__(self, from_title, pagenum, preceding_fragm, following_fragm,
-            new_section_type):
+            new_section_type, throw=False):
         self.decision_type = 'split_sections'
         self.from_title = from_title
         self.pagenum = int(pagenum) # the pagenum where split happens
@@ -28,6 +29,13 @@ class DateDecision():
     def __init__(self, date, from_title, pagenum):
         self.decision_type = 'date'
         self.date = date
+        self.from_title = from_title
+        self.pagenum = int(pagenum)
+
+class TypeDecision():
+    def __init__(self, section_type, from_title, pagenum):
+        self.decision_type = 'type'
+        self.section_type = section_type
         self.from_title = from_title
         self.pagenum = int(pagenum)
 

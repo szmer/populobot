@@ -4,7 +4,7 @@ from copy import copy, deepcopy
 import yaml
 
 from popbot_src.indexing_common import load_indexed
-from popbot_src.manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision, PertinenceDecision, TitleFormDecision
+from popbot_src.manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision, PertinenceDecision, TitleFormDecision, TypeDecision
 
 argparser = argparse.ArgumentParser(description='Review and correct source edition indexing performed by the loading script.')
 argparser.add_argument('parsed_file_path')
@@ -83,7 +83,11 @@ class ReviewShell(Cmd):
 
     def do_jump(self, target_section_n):
         """Go to the supplied target_section_n."""
-        target_section_n = int(target_section_n)
+        try:
+            target_section_n = int(target_section_n)
+        except ValueError:
+            print('Invalid section id {}.'.format(target_section_n))
+            return
         if target_section_n < 0 or target_section_n >= len(edition_sections):
             print('Illegal section index.')
         else:
@@ -186,11 +190,30 @@ class ReviewShell(Cmd):
         """Manually assign a date to the current document. The date should be
         supplied as DD-MM-YYYY, without zeros."""
         global current_section_n
-        formatted_date = tuple([int(elem) for elem in newdate.split('-')])
+        try:
+            formatted_date = tuple([int(elem) for elem in newdate.split('-')])
+        except ValueError:
+            print('{} is not a valid date.'.format(newdate))
+            return
         sections_state = saved_section_list(current_section_n)
         section = edition_sections[current_section_n]
         section.date = formatted_date
         decision = DateDecision(formatted_date, section.title(), section.end_page())
+        self.commit_save(decision, sections_state)
+        self.do_section('')
+
+    def do_type(self, section_type):
+        """Change section type of the section (document, meta)."""
+        global current_section_n
+        if not section_type in ['meta', 'document']:
+            print('Unknown section type {}.'.format(section_type))
+            return
+        sections_state = saved_section_list(current_section_n)
+        section = edition_sections[current_section_n]
+        section.section_type = section_type
+        decision = TypeDecision(section_type, section.title(), section.end_page())
+        if section_type == 'document':
+            section.pertinence = True
         self.commit_save(decision, sections_state)
         self.do_section('')
 
@@ -231,7 +254,10 @@ class ReviewShell(Cmd):
     def do_split(self, args):
         """Split the section on the paragraph_n, creating a new section of
         section_type (meta or document)."""
-        paragraph_n, section_type = tuple(args.split())
+        try:
+            paragraph_n, section_type = tuple(args.split())
+        except ValueError:
+            print('Too many or too much arguments in {}'.format(args))
         try:
             paragraph_n = int(paragraph_n)
         except ValueError:
@@ -256,11 +282,19 @@ class ReviewShell(Cmd):
                 section_type)
         new_section = deepcopy(section)
         new_section.section_type = section_type
-        new_section.pages_paragraphs = new_section.pages_paragraphs[paragraph_n:]
-        new_section.guess_date()
-        section.pages_paragraphs = section.pages_paragraphs[:paragraph_n]
-        edition_sections.insert(current_section_n+1, new_section)
-        current_section_n += 1
+        if section_type == 'document':
+            new_section.pages_paragraphs = section.pages_paragraphs[paragraph_n:]
+            section.pages_paragraphs = section.pages_paragraphs[:paragraph_n]
+            edition_sections.insert(current_section_n+1, new_section)
+            current_section_n += 1
+        # A meta split only excludes one paragraph.
+        else:
+            new_section.pages_paragraphs = [ section.pages_paragraphs[paragraph_n] ]
+            section.pages_paragraphs = (section.pages_paragraphs[:paragraph_n]
+                    + section.pages_paragraphs[paragraph_n+1:])
+            new_section.guess_date()
+            edition_sections.insert(current_section_n+1, new_section)
+            # (don't move the pointer to the new section)
         self.commit_save(decision, sections_state)
         self.do_section('')
 
