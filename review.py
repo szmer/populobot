@@ -1,18 +1,30 @@
-import argparse
+import argparse, io
 from cmd import Cmd
 from copy import copy, deepcopy
 import yaml
 
+from load import load
 from popbot_src.indexing_common import load_indexed
 from popbot_src.manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision, PertinenceDecision, TitleFormDecision, TypeDecision
 
 argparser = argparse.ArgumentParser(description='Review and correct source edition indexing performed by the loading script.')
-argparser.add_argument('parsed_file_path')
-argparser.add_argument('--output_file', '-o')
+argparser.add_argument('loading_file_path')
+argparser.add_argument('--preload', '-p', help='Preload a decisions file. If supplied, the main argument should point to a JSON edition config file.')
 
 args = argparser.parse_args()
 
-edition_sections = load_indexed(args.parsed_file_path)
+preloaded_decisions = []
+if args.preload:
+    loading_stream = io.StringIO()
+    load(args.loading_file_path, manual_decisions_file=args.preload, output_stream=loading_stream)
+    loading_stream.seek(0)
+    edition_sections = load_indexed(loading_stream)
+    with open(args.preload) as decisions_file:
+        preloaded_decisions = yaml.load(decisions_file, Loader=yaml.Loader)
+else:
+    with open(args.loading_file_path) as csv_file:
+        edition_sections = load_indexed(csv_file)
+
 current_section_n = 0
 # Here we store decisions paired with states of edition_sections that preceded them.
 undo_queue = []
@@ -141,7 +153,7 @@ class ReviewShell(Cmd):
         """Save the decisions to a YAML file at the given file path."""
         if filepath == '':
             print('You need to supply a filepath.')
-        decisions = [dec for (dec, stack) in undo_queue]
+        decisions = preloaded_decisions + [dec for (dec, stack) in undo_queue]
         output = yaml.dump(decisions, Dumper=yaml.Dumper, encoding='utf-8')
         with open(filepath, 'w+') as out:
             out.write(output.decode('utf-8'))

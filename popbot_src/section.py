@@ -56,39 +56,41 @@ class Section():
             # We need the first paragraph only for checking the end of existing text.
             if parag_n == 0:
                 continue
-            if parag_n + 1 < len(pages_paragraphs):
-                for decision in split_decisions:
-                    if (fuzzy_match(decision.from_title,
-                        # if we have no title here yet, get it from supplied new paragraphs
-                        self.pages_paragraphs[0][1] if len(self.pages_paragraphs) > 0 else pages_paragraphs[1][1])
-                            and fuzzy_match(decision.preceding_fragm, pages_paragraphs[parag_n-1][1][-80:])
-                            and fuzzy_match(decision.following_fragm, paragraph[:80])):
-                        if decision.new_section_type == 'document':
-                            new_section = Section.new(config, 'document',
-                                    [],
-                                    current_section_n,
-                                    document_id=current_document_n)
-                            current_document_n += 1
-                            split = True
-                        elif decision.new_section_type == 'meta':
-                            new_section = Section.new(config, 'meta',
-                                    [(scan_page, paragraph)],
-                                    current_section_n)
-                        else:
-                            raise NotImplementedError('requested section split with unknown section'
-                                    ' type {}'.format(decision.new_section_type))
-                        current_section_n += 1
-                        # Check if there is a title form decision for this new section.
-                        for page_decision in manual_decisions[new_section.pages_paragraphs[0][0]]:
-                            if (page_decision.decision_type == 'title_form'
-                                    and fuzzy_match(new_section.pages_paragraphs[0][1], page_decision)):
-                                new_section.pages_paragraphs[0] = (new_section.pages_paragraphs[0][0],
-                                        decision.to_title)
-                        additional_sections.append(new_section)
-            if split:
-                additional_sections[-1].pages_paragraphs.append((scan_page, paragraph))
+            for decision in split_decisions:
+                if (fuzzy_match(decision.from_title,
+                    # if we have no title here yet, get it from supplied new paragraphs
+                    self.pages_paragraphs[0][1] if len(self.pages_paragraphs) > 0 else pages_paragraphs[1][1])
+                        and fuzzy_match(decision.preceding_fragm, pages_paragraphs[parag_n-1][1][-80:])
+                        and fuzzy_match(decision.following_fragm, paragraph[:80])):
+                    if decision.new_section_type == 'document':
+                        new_section = Section.new(config, 'document',
+                                [(scan_page, paragraph)],
+                                current_section_n,
+                                document_id=current_document_n)
+                        current_document_n += 1
+                        split = True
+                    elif decision.new_section_type == 'meta':
+                        new_section = Section.new(config, 'meta',
+                                [(scan_page, paragraph)],
+                                current_section_n)
+                    else:
+                        raise NotImplementedError('requested section split with unknown section'
+                                ' type {}'.format(decision.new_section_type))
+                    current_section_n += 1
+                    # Check if there is a title form decision for this new section.
+                    for page_decision in manual_decisions[new_section.pages_paragraphs[0][0]]:
+                        if (page_decision.decision_type == 'title_form'
+                                and fuzzy_match(new_section.pages_paragraphs[0][1], page_decision.from_title)):
+                            new_section.pages_paragraphs[0] = (new_section.pages_paragraphs[0][0],
+                                    decision.to_title)
+                    additional_sections.append(new_section)
+                    break
+            # (if we did not break on a split decision)
             else:
-                self.pages_paragraphs.append((scan_page, paragraph))
+                if split:
+                    additional_sections[-1].pages_paragraphs.append((scan_page, paragraph))
+                else:
+                    self.pages_paragraphs.append((scan_page, paragraph))
         return additional_sections
 
     def guess_date(self):
