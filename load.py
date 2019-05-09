@@ -61,7 +61,6 @@ for page_n, page in enumerate(pages):
         new_title = False # we will store it here to set after commiting the previous one
         if is_meta_fragment(paragraph, config):
             section = Section.new(config, 'meta', [(page_n, paragraph)], len(sections))
-            section.scan_pages = (page_n, page_n+1)
             # A meta section is one paragraph long and cannot be split, but it
             # can be merged.
             merged_with_previous = False
@@ -167,8 +166,8 @@ for page_n, page in enumerate(pages):
                     latest_doc_section_n = str([s.section_type[0] for s in sections]).rfind('d')
                 current_document_paragraphs = [(page_n, new_title)]
             # If there is no document content, add it as a meta section.
-            else:
-                section = Section.new(config, 'meta', current_document_paragraphs, len(sections))
+            elif new_title :
+                section = Section.new(config, 'meta', [(page_n, new_title)], len(sections))
                 sections.append(section)
 # If something remains in the document buffer, commit it.
 if possible_heading:
