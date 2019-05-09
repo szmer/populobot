@@ -60,7 +60,6 @@ class Section():
                 if (fuzzy_match(decision.from_title,
                     # if we have no title here yet, get it from supplied new paragraphs
                     self.pages_paragraphs[0][1] if len(self.pages_paragraphs) > 0 else pages_paragraphs[1][1])
-                        and fuzzy_match(decision.preceding_fragm, pages_paragraphs[parag_n-1][1][-80:])
                         and fuzzy_match(decision.following_fragm, paragraph[:80])):
                     if decision.new_section_type == 'document':
                         new_section = Section.new(config, 'document',

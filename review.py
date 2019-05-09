@@ -289,7 +289,6 @@ class ReviewShell(Cmd):
         section = edition_sections[current_section_n]
         decision = SplitSectionDecision(section.pages_paragraphs[0][1],
                 section.pages_paragraphs[paragraph_n][0],
-                section.pages_paragraphs[paragraph_n-1][1][-80:],
                 section.pages_paragraphs[paragraph_n][1][:80],
                 section_type)
         new_section = deepcopy(section)
