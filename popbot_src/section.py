@@ -34,6 +34,9 @@ class Section():
         else:
             return ''
 
+    def start_page(self):
+        return self.pages_paragraphs[0][0]
+
     def end_page(self):
         return self.pages_paragraphs[-1][0]
 
@@ -57,10 +60,7 @@ class Section():
             if parag_n == 0:
                 continue
             for decision in split_decisions:
-                if (fuzzy_match(decision.from_title,
-                    # if we have no title here yet, get it from supplied new paragraphs
-                    self.pages_paragraphs[0][1] if len(self.pages_paragraphs) > 0 else pages_paragraphs[1][1])
-                        and fuzzy_match(decision.following_fragm, paragraph[:80])):
+                if fuzzy_match(decision.following_fragm, paragraph[:80]):
                     if decision.new_section_type == 'document':
                         new_section = Section.new(config, 'document',
                                 [(scan_page, paragraph)],

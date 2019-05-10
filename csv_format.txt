@@ -3,7 +3,6 @@ book title
 in book section id (meta and non-meta)
 in book document id
 scan page
-title of the section in the book
 section type (resolution etc.)
 date (dd-mm-yyyy)
 palatinate

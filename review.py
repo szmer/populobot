@@ -252,7 +252,7 @@ class ReviewShell(Cmd):
             # will be actually modified.
             sections_state = saved_section_list(previous_document_n)
             section = edition_sections[current_section_n]
-            decision = MergeSectionDecision(section.title(), section.end_page(),
+            decision = MergeSectionDecision(section.title(), section.start_page(),
                     edition_sections[previous_document_n].pages_paragraphs[-1][1][-80:],
                     section.pages_paragraphs[0][1][:80])
             edition_sections[previous_document_n].pages_paragraphs += edition_sections[current_section_n].pages_paragraphs
@@ -287,7 +287,7 @@ class ReviewShell(Cmd):
             return
         sections_state = saved_section_list(current_section_n)
         section = edition_sections[current_section_n]
-        decision = SplitSectionDecision(section.pages_paragraphs[0][1],
+        decision = SplitSectionDecision(
                 section.pages_paragraphs[paragraph_n][0],
                 section.pages_paragraphs[paragraph_n][1][:80],
                 section_type)

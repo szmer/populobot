@@ -45,6 +45,7 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
     # We keep the score to use it with beginning paragraph detection.
     previous_heading_score = 0
     possible_heading = False
+    possible_heading_page = False
     for page_n, page in enumerate(pages):
         ignored_page = False
         if 'ignore_page_ranges' in config:
@@ -113,6 +114,7 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                 heading_score_estimation = heading_score(paragraph, config)
                 previous_heading_score = heading_score_estimation
                 possible_heading = paragraph
+                possible_heading_page = page_n
             # Commit the previous document, without what we decided to be a heading.
             if commit_previous:
                 if len(current_document_paragraphs) > 0:
@@ -153,7 +155,6 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                             additional_sections = sections[latest_doc_section_n].add_to_text(
                                     current_document_paragraphs,
                                     manual_decisions, config, len(sections), current_document_id)
-                            sections[latest_doc_section_n].scan_pages[1] = page_n
                             sections += additional_sections
                             current_document_id += len([sec for sec
                                 in additional_sections if sec.section_type == 'document'])
@@ -182,7 +183,7 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                         current_document_id += len([sec for sec
                             in additional_sections if sec.section_type == 'document'])
                         latest_doc_section_n = ''.join([s.section_type[0] for s in sections]).rfind('d')
-                current_document_paragraphs = [(page_n, new_title)]
+                current_document_paragraphs = [(possible_heading_page, new_title)]
     # If something remains in the document buffer, commit it.
     if possible_heading:
         if config['ignore_page_ranges']:
