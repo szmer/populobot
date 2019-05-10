@@ -55,6 +55,8 @@ class Section():
         split = False # indicates whether we need to place next parags in additional sections
         current_section_n = section_n
         current_document_n = document_n
+        # After a split, we want to keep adding to the recent document section, but not any meta one.
+        recipient_document_n = 0
         for parag_n, (scan_page, paragraph) in enumerate(pages_paragraphs):
             # We need the first paragraph only for checking the end of existing text.
             if parag_n == 0:
@@ -67,6 +69,7 @@ class Section():
                                 current_section_n,
                                 document_id=current_document_n)
                         current_document_n += 1
+                        recipient_document_n = len(additional_sections)
                         split = True
                     elif decision.new_section_type == 'meta':
                         new_section = Section.new(config, 'meta',
@@ -81,13 +84,13 @@ class Section():
                         if (page_decision.decision_type == 'title_form'
                                 and fuzzy_match(new_section.pages_paragraphs[0][1], page_decision.from_title)):
                             new_section.pages_paragraphs[0] = (new_section.pages_paragraphs[0][0],
-                                    decision.to_title)
+                                    page_decision.to_title)
                     additional_sections.append(new_section)
                     break
             # (if we did not break on a split decision)
             else:
                 if split:
-                    additional_sections[-1].pages_paragraphs.append((scan_page, paragraph))
+                    additional_sections[recipient_document_n].pages_paragraphs.append((scan_page, paragraph))
                 else:
                     self.pages_paragraphs.append((scan_page, paragraph))
         return additional_sections

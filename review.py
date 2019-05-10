@@ -175,7 +175,7 @@ class ReviewShell(Cmd):
         sections_state = saved_section_list(current_section_n)
         decision = PertinenceDecision(True,
                 section.title(),
-                section.end_page())
+                section.start_page())
         section.pertinence = True
         self.commit_save(decision, sections_state)
         self.do_section('')
@@ -193,7 +193,7 @@ class ReviewShell(Cmd):
         sections_state = saved_section_list(current_section_n)
         decision = PertinenceDecision(False,
                 section.title(),
-                section.end_page())
+                section.start_page())
         section.pertinence = False
         self.commit_save(decision, sections_state)
         self.do_section('')
@@ -210,7 +210,7 @@ class ReviewShell(Cmd):
         sections_state = saved_section_list(current_section_n)
         section = edition_sections[current_section_n]
         section.date = formatted_date
-        decision = DateDecision(formatted_date, section.title(), section.end_page())
+        decision = DateDecision(formatted_date, section.title(), section.start_page())
         self.commit_save(decision, sections_state)
         self.do_section('')
 
@@ -223,7 +223,7 @@ class ReviewShell(Cmd):
         sections_state = saved_section_list(current_section_n)
         section = edition_sections[current_section_n]
         section.section_type = section_type
-        decision = TypeDecision(section_type, section.title(), section.end_page())
+        decision = TypeDecision(section_type, section.title(), section.start_page())
         if section_type == 'document':
             section.pertinence = True
         self.commit_save(decision, sections_state)
@@ -234,7 +234,7 @@ class ReviewShell(Cmd):
         global current_section_n
         sections_state = saved_section_list(current_section_n)
         section = edition_sections[current_section_n]
-        decision = TitleFormDecision(new_title, section.title(), section.end_page())
+        decision = TitleFormDecision(new_title, section.title(), section.start_page())
         section.pages_paragraphs[0] = (section.pages_paragraphs[0][0], new_title)
         self.commit_save(decision, sections_state)
         self.do_section('')
