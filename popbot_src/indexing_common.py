@@ -1,5 +1,6 @@
 import csv
 from itertools import chain
+from copy import copy
 from popbot_src.load_helpers import fuzzy_match
 from popbot_src.section import Section
 
@@ -29,8 +30,8 @@ def load_document_sections(csv_path, print_titles=False):
 def merge_possible(manual_decisions, page_paragraph):
     return (
         len([d for d in manual_decisions[page_paragraph[0]]
-        if d.decision_type=='merge_sections'
-        and fuzzy_match(page_paragraph[1], d.from_title)])
+        if (d.decision_type=='merge_sections'
+        and fuzzy_match(page_paragraph[1], d.from_title))])
         > 0)
 
 def find_doc_and_merge(sections, pages_paragraphs, manual_decisions, meta_sections_buffer,
@@ -111,14 +112,12 @@ def commit_doc_with_decisions(config, sections, pages_paragraphs, manual_decisio
                     # indices need to be already incremented for the
                     # main section that we will add
                     current_document_id+1)
-            for add_section in additional_sections:
-                add_section.join_to_list(sections)
-            current_document_id += len([sec for sec
-                in additional_sections if sec.section_type == 'document'])
             if not corrected_date:
                 section.guess_date()
             section.join_to_list(sections)
-            for meta_section in meta_sections_buffer:
+            # Operate on a copy, so we will ignore additional metas that will
+            # be added downstream.
+            for meta_section in copy(meta_sections_buffer):
                 # See if needs to be merged to a recently
                 # commited document section.
                 if merge_possible(manual_decisions, meta_section.pages_paragraphs[0]):
@@ -135,6 +134,10 @@ def commit_doc_with_decisions(config, sections, pages_paragraphs, manual_decisio
                     meta_section.join_to_list(sections)
             # We need to do it this way to actually empty the provided list.
             del meta_sections_buffer[:]
+            for add_section in additional_sections:
+                add_section.join_to_list(sections)
             current_document_id += 1
+            current_document_id += len([sec for sec
+                in additional_sections if sec.section_type == 'document'])
             latest_doc_section_n = ''.join([s.section_type[0] for s in sections]).rfind('d')
     return current_document_id, latest_doc_section_n

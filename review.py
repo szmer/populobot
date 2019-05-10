@@ -22,6 +22,8 @@ if args.preload:
     with open(args.preload) as decisions_file:
         preloaded_decisions = yaml.load(decisions_file, Loader=yaml.Loader)
 else:
+    if 'json' in args.loading_file_path:
+        print('{} has a json extenstion, while I expect csv.'.format(args.loading_file_path))
     with open(args.loading_file_path) as csv_file:
         edition_sections = load_indexed(csv_file)
 
