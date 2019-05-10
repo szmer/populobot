@@ -36,12 +36,15 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
     # Process content lines for files sequentially.
     # We accumulate lines here until a heading or short line:
     current_document_paragraphs = [] # pairs (pagenum, paragraph)
+    # NOTE New sections should be added only with their join_to_list method.
     sections = []
+    # Meta sections found after a title are added after the whole document, so
+    # they can be merged if needed.
+    meta_sections_buffer = []
     current_document_id = 0
-    # We need to keep track of the latest document section, because we may want to
-    # merge subsequent sections with it.
+    # We need to keep track of section index of the latest document section,
+    # because we may want to merge subsequent sections to it.
     latest_doc_section_n = False
-    # Section id is just len(sections).
     # We keep the score to use it with beginning paragraph detection.
     previous_heading_score = 0
     possible_heading = False
@@ -64,7 +67,7 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
             meta = False # depends on detection and possibly a manual decision
             if is_meta_fragment(paragraph, config):
                 meta = True
-                section = Section.new(config, 'meta', [(page_n, paragraph)], len(sections))
+                section = Section.new(config, 'meta', [(page_n, paragraph)])
                 # A meta section is one paragraph long and cannot be split, but it
                 # can be merged.
                 merged_with_previous = False
@@ -85,8 +88,10 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                         # previous section.
                         additional_sections = sections[latest_doc_section_n].add_to_text(
                                 [(page_n, paragraph)],
-                                manual_decisions, config, len(sections), current_document_id)
-                        sections += additional_sections
+                                manual_decisions, meta_sections_buffer,
+                                config, current_document_id)
+                        for add_section in additional_sections:
+                            add_section.join_to_list(sections)
                         current_document_id += len([sec for sec
                             in additional_sections if sec.section_type == 'document'])
                         merged_with_previous = True
@@ -94,7 +99,7 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                             and fuzzy_match(decision.from_title, paragraph)):
                         section.pages_paragraphs[0] = (section.pages_paragraphs[0][0], decision.to_title)
                 if meta and not merged_with_previous:
-                    sections.append(section)
+                    meta_sections_buffer.append(section)
             if not meta:
                 # If it's not meta, handle the case where there might have been a heading previosly.
                 # Note that all document paragraphs pass through here
@@ -121,7 +126,6 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                 if len(current_document_paragraphs) > 0:
                     section = Section.new(config, 'document',
                             [], # leave empty for now
-                            len(sections),
                             document_id=current_document_id)
 
                     # Apply corrections before adding the text and commiting
@@ -141,8 +145,8 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                         if (decision.decision_type == 'meta'
                                 and decision.section_type == 'document'
                                 and fuzzy_match(decision.from_title, paragraph)):
-                            section = Section.new(config, 'meta', [(page_n, paragraph)], len(sections))
-                            sections.append(section)
+                            section = Section.new(config, 'meta', [(page_n, paragraph)])
+                            meta_sections_buffer.append(section)
                             meta = True
                             break
                         # Merge decisions.
@@ -155,8 +159,10 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                             # previous section.
                             additional_sections = sections[latest_doc_section_n].add_to_text(
                                     current_document_paragraphs,
-                                    manual_decisions, config, len(sections), current_document_id)
-                            sections += additional_sections
+                                    manual_decisions, meta_sections_buffer, config,
+                                    current_document_id)
+                            for add_section in additional_sections:
+                                add_section.join_to_list(sections)
                             current_document_id += len([sec for sec
                                 in additional_sections if sec.section_type == 'document'])
                             merged_with_previous = True
@@ -172,15 +178,19 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                         # Finally add the text content.
                         additional_sections = section.add_to_text(
                                 current_document_paragraphs,
-                                manual_decisions, config,
+                                manual_decisions, meta_sections_buffer, config,
                                 # indices need to be already incremented for the
                                 # main section that we will add
-                                len(sections)+1, current_document_id+1)
+                                current_document_id+1)
                         if not corrected_date:
                             section.guess_date()
-                        sections.append(section)
+                        section.join_to_list(sections)
+                        for meta_section in meta_sections_buffer:
+                            meta_section.join_to_list(sections)
+                        meta_sections_buffer = []
                         current_document_id += 1
-                        sections += additional_sections
+                        for add_section in additional_sections:
+                            add_section.join_to_list(sections)
                         current_document_id += len([sec for sec
                             in additional_sections if sec.section_type == 'document'])
                         latest_doc_section_n = ''.join([s.section_type[0] for s in sections]).rfind('d')
@@ -195,9 +205,10 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
     if len(current_document_paragraphs) > 0:
         section = Section.new(config, 'document',
                            current_document_paragraphs,
-                           len(sections),
                            document_id=current_document_id)
-        sections.append(section)
+        section.join_to_list(sections)
+    for meta_section in meta_sections_buffer:
+        meta_section.join_to_list(sections)
 
     # Print collected sections as csv rows.
     for section in sections:

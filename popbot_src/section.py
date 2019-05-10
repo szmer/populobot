@@ -40,7 +40,11 @@ class Section():
     def end_page(self):
         return self.pages_paragraphs[-1][0]
 
-    def add_to_text(self, new_pages_paragraphs, manual_decisions, config, section_n, document_n):
+    def join_to_list(self, sections_list):
+        self.inbook_section_id = len(sections_list)
+        sections_list.append(self)
+
+    def add_to_text(self, new_pages_paragraphs, manual_decisions, meta_sections_buffer, config, document_n):
         """Add the new_text to section text. If there are new sections splitted,
         they are returned as a list. The dictionary of all manual decisions
         should be supplied as an argument."""
@@ -53,7 +57,6 @@ class Section():
         # Add own last paragraph for context checking.
         pages_paragraphs = (self.pages_paragraphs[-1:] if len(self.pages_paragraphs) > 0 else [(0, '')]) + new_pages_paragraphs
         split = False # indicates whether we need to place next parags in additional sections
-        current_section_n = section_n
         current_document_n = document_n
         # After a split, we want to keep adding to the recent document section, but not any meta one.
         recipient_document_n = 0
@@ -63,29 +66,33 @@ class Section():
                 continue
             for decision in split_decisions:
                 if fuzzy_match(decision.following_fragm, paragraph[:80]):
+                    new_doc = False
                     if decision.new_section_type == 'document':
                         new_section = Section.new(config, 'document',
                                 [(scan_page, paragraph)],
-                                current_section_n,
                                 document_id=current_document_n)
                         current_document_n += 1
                         recipient_document_n = len(additional_sections)
                         split = True
+                        new_doc = True
                     elif decision.new_section_type == 'meta':
                         new_section = Section.new(config, 'meta',
-                                [(scan_page, paragraph)],
-                                current_section_n)
+                                [(scan_page, paragraph)])
                     else:
                         raise NotImplementedError('requested section split with unknown section'
                                 ' type {}'.format(decision.new_section_type))
-                    current_section_n += 1
                     # Check if there is a title form decision for this new section.
                     for page_decision in manual_decisions[new_section.pages_paragraphs[0][0]]:
                         if (page_decision.decision_type == 'title_form'
                                 and fuzzy_match(new_section.pages_paragraphs[0][1], page_decision.from_title)):
                             new_section.pages_paragraphs[0] = (new_section.pages_paragraphs[0][0],
                                     page_decision.to_title)
-                    additional_sections.append(new_section)
+                    if new_doc:
+                        additional_sections.append(new_section)
+                        additional_sections += meta_sections_buffer
+                        meta_sections_buffer = []
+                    else:
+                        meta_sections_buffer.append(new_section)
                     break
             # (if we did not break on a split decision)
             else:
@@ -115,10 +122,10 @@ class Section():
         pass
 
     @classmethod
-    def new(cls, config, section_type, section_content, section_id, document_id=False, pertinence='default'):
+    def new(cls, config, section_type, section_content, document_id=False, pertinence='default'):
         self = cls()
         self.book_title = config['book_title']
-        self.inbook_section_id = section_id
+        self.inbook_section_id = False # not included in any yet
         self.inbook_document_id = document_id
         self.section_type = section_type
         self.date = False
