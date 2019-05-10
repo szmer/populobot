@@ -8,6 +8,8 @@ meta_signs = [ # characteristic elements for a meta section
             re.compile('\\d+-\\d+\\.$'),
             # "Rękopis"
             re.compile('^.?.?Rp\\.'),
+            # "mowa o"
+            re.compile(' mowa o ', flags=re.IGNORECASE),
             # evident footnote
             re.compile('^[\\WiIvVxX]{1,3} [^\\\\]{1,40}$'),
             # number range
@@ -22,7 +24,7 @@ def is_meta_fragment(fragment, config):
         if sign.search(fragment):
             ###print(sign, fragment)
             return True
-    # If a large part of the fragment of non-alphabetic
+    # If a large part of the fragment of non-alphabetic (re.sub removes alphabetics for the check)
     if len(fragment) > 0 and len(re.sub('[^\\W0-9]', '', fragment)) / len(fragment) >= 0.65:
         return True
 
@@ -53,6 +55,7 @@ heading_signs_2ord = ([
     +
     # instances issuing documents
     [re.compile(s, flags=re.IGNORECASE) for s in ['sejmiku', 'conventus', 'palatinatu', 'przedsejmo', 'konwokacyj', 'deput', 'województwa', 'ziemi', 'księstw', 'rycerstw', 'szlachty', 'ziemian']])
+
 # The number of antisigns is subtracted from the number of signs.
 heading_antisigns = ([
     re.compile('\\D0+'), # isolated zeros are bogus
@@ -62,7 +65,7 @@ heading_antisigns = ([
     [re.compile(s) for s in ['[aeu]j[ąe][,\.\\s]', '[ae]my[,\.\\s]', '[aeyi]ć[,\.\\s]', '[iyaeąę]ł[ay]?[,\.\\s]', '[iae[iaeąę]]li?[,\.\\s]', '[sś]my[,\.\\s]', 'ąc[aey]?[mj]?u?[,\.\\s]', '[aoe]n[yieaą][jm]?[,\.\\s]', 'wszy[,\.\\s]', 'eni[ea]m?[,\.\\s]']]
     +
     # other out of place vocabulary
-    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor']])
+    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód']])
 
 def heading_score(section, config, verbose=False):
     if len(section) < 15 or len(section) > config['max_heading_len']:

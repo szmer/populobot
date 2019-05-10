@@ -57,13 +57,13 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
         paragraphs = page.split('\n\n')
         page_decisions = manual_decisions[page_n]
         for paragraph in paragraphs:
-            meta = True
             if len(paragraph.strip()) == 0:
                 continue
             commit_previous = False # we need to do that if we've encountered a heading
             new_title = False # we will store it here to set after commiting the previous one
             meta = False # depends on detection and possibly a manual decision
             if is_meta_fragment(paragraph, config):
+                meta = True
                 section = Section.new(config, 'meta', [(page_n, paragraph)], len(sections))
                 # A meta section is one paragraph long and cannot be split, but it
                 # can be merged.
@@ -117,6 +117,7 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                 possible_heading_page = page_n
             # Commit the previous document, without what we decided to be a heading.
             if commit_previous:
+                commit_previous = False
                 if len(current_document_paragraphs) > 0:
                     section = Section.new(config, 'document',
                             [], # leave empty for now
