@@ -1,10 +1,10 @@
 import argparse, json, os, re, sys
-from itertools import chain
 from collections import defaultdict
 import yaml
 
 from popbot_src.section import Section
 from popbot_src.load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match
+from popbot_src.indexing_common import commit_doc_with_decisions
 
 argparser = argparse.ArgumentParser(description='Load and index an edition of sejmik resolutions from scanned pages.')
 argparser.add_argument('config_file_path')
@@ -70,7 +70,6 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                 section = Section.new(config, 'meta', [(page_n, paragraph)])
                 # A meta section is one paragraph long and cannot be split, but it
                 # can be merged.
-                merged_with_previous = False
                 for decision in page_decisions:
                     # Section type decisions.
                     if (decision.decision_type == 'type'
@@ -79,26 +78,11 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
                         # This will send the paragraph to document paragraphs handling.
                         meta = False
                         break
-                    # Merge decisions (it can be merged with the previous document).
-                    if (decision.decision_type == 'merge_sections' and latest_doc_section_n
-                            and fuzzy_match(decision.from_title, paragraph)
-                            and fuzzy_match(decision.following_fragm, paragraph[:80])
-                            and fuzzy_match(decision.preceding_fragm, sections[latest_doc_section_n].pages_paragraphs[-1][1][-80:])):
-                        # Add both the title and the contents to the
-                        # previous section.
-                        additional_sections = sections[latest_doc_section_n].add_to_text(
-                                [(page_n, paragraph)],
-                                manual_decisions, meta_sections_buffer,
-                                config, current_document_id)
-                        for add_section in additional_sections:
-                            add_section.join_to_list(sections)
-                        current_document_id += len([sec for sec
-                            in additional_sections if sec.section_type == 'document'])
-                        merged_with_previous = True
+                    # Title form decisions.
                     if (decision.decision_type == 'title_form' 
                             and fuzzy_match(decision.from_title, paragraph)):
                         section.pages_paragraphs[0] = (section.pages_paragraphs[0][0], decision.to_title)
-                if meta and not merged_with_previous:
+                if meta:
                     meta_sections_buffer.append(section)
             if not meta:
                 # If it's not meta, handle the case where there might have been a heading previosly.
@@ -124,76 +108,9 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
             if commit_previous:
                 commit_previous = False
                 if len(current_document_paragraphs) > 0:
-                    section = Section.new(config, 'document',
-                            [], # leave empty for now
-                            document_id=current_document_id)
-
-                    # Apply corrections before adding the text and commiting
-                    # (split decisions will be applied then).
-                    corrected_date = False
-                    merged_with_previous = False
-                    # Get page decisions for all the pages of the document.
-                    page_decisions = chain.from_iterable([manual_decisions[pn]
-                        for pn in range(current_document_paragraphs[0][0], page_n+1)])
-                    for decision in page_decisions:
-                        # Title form decisions.
-                        if (decision.decision_type == 'title_form' 
-                                and fuzzy_match(decision.from_title, current_document_paragraphs[0][1])):
-                            current_document_paragraphs[0] = (current_document_paragraphs[0][0],
-                                    decision.to_title)
-                        # Section type decisions.
-                        if (decision.decision_type == 'meta'
-                                and decision.section_type == 'document'
-                                and fuzzy_match(decision.from_title, paragraph)):
-                            section = Section.new(config, 'meta', [(page_n, paragraph)])
-                            meta_sections_buffer.append(section)
-                            meta = True
-                            break
-                        # Merge decisions.
-                        if (decision.decision_type == 'merge_sections' and latest_doc_section_n
-                                and fuzzy_match(decision.from_title, current_document_paragraphs[0][1])
-                                and fuzzy_match(decision.following_fragm, current_document_paragraphs[0][1][:80])
-                                and fuzzy_match(decision.preceding_fragm,
-                                    sections[latest_doc_section_n].pages_paragraphs[-1][1][-80:])):
-                            # Add both the title and the contents to the
-                            # previous section.
-                            additional_sections = sections[latest_doc_section_n].add_to_text(
-                                    current_document_paragraphs,
-                                    manual_decisions, meta_sections_buffer, config,
-                                    current_document_id)
-                            for add_section in additional_sections:
-                                add_section.join_to_list(sections)
-                            current_document_id += len([sec for sec
-                                in additional_sections if sec.section_type == 'document'])
-                            merged_with_previous = True
-                        # Date decisions.
-                        if decision.decision_type == 'date' and fuzzy_match(decision.from_title, current_document_paragraphs[0][1]):
-                            section.date = decision.date
-                            corrected_date = True
-                        # Pertinence decisions.
-                        if decision.decision_type == 'pertinence' and fuzzy_match(decision.from_title, current_document_paragraphs[0][1]):
-                            section.pertinence = decision.pertinence_status
-
-                    if not merged_with_previous and not meta:
-                        # Finally add the text content.
-                        additional_sections = section.add_to_text(
-                                current_document_paragraphs,
-                                manual_decisions, meta_sections_buffer, config,
-                                # indices need to be already incremented for the
-                                # main section that we will add
-                                current_document_id+1)
-                        if not corrected_date:
-                            section.guess_date()
-                        section.join_to_list(sections)
-                        for meta_section in meta_sections_buffer:
-                            meta_section.join_to_list(sections)
-                        meta_sections_buffer = []
-                        current_document_id += 1
-                        for add_section in additional_sections:
-                            add_section.join_to_list(sections)
-                        current_document_id += len([sec for sec
-                            in additional_sections if sec.section_type == 'document'])
-                        latest_doc_section_n = ''.join([s.section_type[0] for s in sections]).rfind('d')
+                    current_document_id, latest_doc_section_n = commit_doc_with_decisions(
+                            config, sections, current_document_paragraphs, manual_decisions,
+                            meta_sections_buffer, current_document_id, latest_doc_section_n)
                 current_document_paragraphs = [(possible_heading_page, new_title)]
     # If something remains in the document buffer, commit it.
     if possible_heading:
@@ -203,12 +120,9 @@ def load(config_file_path, manual_decisions_file=False, output_stream=sys.stdout
             last_page = len(pages) - 1
         current_document_paragraphs.append((last_page, paragraph))
     if len(current_document_paragraphs) > 0:
-        section = Section.new(config, 'document',
-                           current_document_paragraphs,
-                           document_id=current_document_id)
-        section.join_to_list(sections)
-    for meta_section in meta_sections_buffer:
-        meta_section.join_to_list(sections)
+        current_document_id, latest_doc_section_n = commit_doc_with_decisions(
+                config, sections, current_document_paragraphs, manual_decisions,
+                meta_sections_buffer, current_document_id, latest_doc_section_n)
 
     # Print collected sections as csv rows.
     for section in sections:

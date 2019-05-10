@@ -44,7 +44,8 @@ class Section():
         self.inbook_section_id = len(sections_list)
         sections_list.append(self)
 
-    def add_to_text(self, new_pages_paragraphs, manual_decisions, meta_sections_buffer, config, document_n):
+    def add_to_text(self, new_pages_paragraphs, manual_decisions, meta_sections_buffer, config, document_n,
+            after_n=False):
         """Add the new_text to section text. If there are new sections splitted,
         they are returned as a list. The dictionary of all manual decisions
         should be supplied as an argument."""
@@ -58,6 +59,7 @@ class Section():
         pages_paragraphs = (self.pages_paragraphs[-1:] if len(self.pages_paragraphs) > 0 else [(0, '')]) + new_pages_paragraphs
         split = False # indicates whether we need to place next parags in additional sections
         current_document_n = document_n
+        added_pages_paragraphs = []
         # After a split, we want to keep adding to the recent document section, but not any meta one.
         recipient_document_n = 0
         for parag_n, (scan_page, paragraph) in enumerate(pages_paragraphs):
@@ -99,8 +101,49 @@ class Section():
                 if split:
                     additional_sections[recipient_document_n].pages_paragraphs.append((scan_page, paragraph))
                 else:
-                    self.pages_paragraphs.append((scan_page, paragraph))
+                    added_pages_paragraphs.append((scan_page, paragraph))
+        if after_n:
+            self.pages_paragraphs = (self.pages_paragraphs[:after_n+1]
+                    + added_pages_paragraphs
+                    + self.pages_paragraphs[after_n+1:])
+        else:
+            self.pages_paragraphs += added_pages_paragraphs
         return additional_sections
+
+    def merge_if(self, manual_decisions, merged_paragraphs, meta_sections_buffer, config,
+            document_n):
+        """Merge the merged_section if one of the decisions applies. Return False, True or a list
+        of additional sections (from add_to_text) if some splits happen."""
+        if self.section_type != 'document':
+            raise RuntimeError('An attempt to merge to a non-document section.')
+        for decision in manual_decisions[merged_paragraphs[0][0]]:
+            # Merge decisions.
+            if (decision.decision_type == 'merge_sections'
+                    and fuzzy_match(decision.from_title, merged_paragraphs[0][1])
+                    and fuzzy_match(decision.following_fragm, merged_paragraphs[0][1][:80])):
+                after_n = [n for n in range(len(self.pages_paragraphs))
+                        if fuzzy_match(decision.preceding_fragm,
+                            self.pages_paragraphs[n][1][-80:])]
+                if len(after_n) > 0:
+                    if len(after_n) > 1:
+                        raise RuntimeError('Ambiguous merge instructions (multiple paragraphs match as preceding).')
+                    after_n = after_n[0]
+                    # Add both the title and the contents to the
+                    # previous section.
+                    additional_sections = self.add_to_text(
+                            merged_paragraphs,
+                            manual_decisions, meta_sections_buffer,
+                            config, document_n,
+                            after_n)
+                    if len(additional_sections) > 0:
+                        return additional_sections
+                    else:
+                        return True
+#####                current_document_id += len([sec for sec
+#####                    in additional_sections if sec.section_type == 'document'])
+                else:
+                    raise ValueError('Cannot match the section to be merged with previous document paragraphs.')
+        return False
 
     def guess_date(self):
         """Given the own title and document content, try to guess the date on which the document was created. Return the date that was chosen or False, if none was."""

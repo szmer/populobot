@@ -1,4 +1,6 @@
 import csv
+from itertools import chain
+from popbot_src.load_helpers import fuzzy_match
 from popbot_src.section import Section
 
 def load_indexed(csv_file):
@@ -23,3 +25,116 @@ def load_document_sections(csv_path, print_titles=False):
             if print_titles:
                 print(section.title())
     return document_sections
+
+def merge_possible(manual_decisions, page_paragraph):
+    return (
+        len([d for d in manual_decisions[page_paragraph[0]]
+        if d.decision_type=='merge_sections'
+        and fuzzy_match(page_paragraph[1], d.from_title)])
+        > 0)
+
+def find_doc_and_merge(sections, pages_paragraphs, manual_decisions, meta_sections_buffer,
+        config, current_document_id):
+    """Find a document to merge to and merge, if there is a decision (check
+    with merge_possible beforehand to save on computation). Note that splits
+    can happen when merging, so additional indexing state arguments need to
+    be provided."""
+    bad_merge = False
+    for doc_section in reversed(sections):
+        if doc_section.section_type == 'document':
+            try:
+                additional_sections = doc_section.merge_if(
+                        manual_decisions, pages_paragraphs,
+                        meta_sections_buffer, config, current_document_id)
+                bad_merge = False
+                break
+            except ValueError:
+                bad_merge = True
+                continue
+    if bad_merge:
+        raise RuntimeError('There was an unresolved merge decision.')
+    return additional_sections
+
+def commit_doc_with_decisions(config, sections, pages_paragraphs, manual_decisions,
+    meta_sections_buffer, current_document_id, latest_doc_section_n):
+    # See if we need merging.
+    if merge_possible(manual_decisions, pages_paragraphs[0]):
+        additional_sections = find_doc_and_merge(sections, pages_paragraphs, manual_decisions,
+                meta_sections_buffer, config, current_document_id)
+    else:
+        additional_sections = False
+    if additional_sections:
+        if isinstance(additional_sections, list):
+            for add_section in additional_sections:
+                add_section.join_to_list(sections)
+    # If not merged.
+    else:
+        section = Section.new(config, 'document',
+                [], # leave empty for now
+                document_id=current_document_id)
+        # Apply corrections before adding the text and commiting
+        # (split decisions will be applied then).
+        corrected_date = False
+        meta = False
+        # Get page decisions for all the pages of the document.
+        page_decisions = chain.from_iterable([manual_decisions[pn]
+            for pn in range(pages_paragraphs[0][0], pages_paragraphs[-1][0]+1)])
+        for decision in page_decisions:
+            # Title form decisions.
+            if (decision.decision_type == 'title_form'
+                    and fuzzy_match(decision.from_title, pages_paragraphs[0][1])):
+                pages_paragraphs[0] = (pages_paragraphs[0][0],
+                        decision.to_title)
+            # Section type decisions.
+            if (decision.decision_type == 'type'
+                    and decision.section_type == 'meta'
+                    and fuzzy_match(decision.from_title, pages_paragraphs[0][1])):
+                for (page, paragraph) in pages_paragraphs:
+                    section = Section.new(config, 'meta', [(page, paragraph)])
+                    meta_sections_buffer.append(section)
+                meta = True
+                break
+            # Date decisions.
+            if decision.decision_type == 'date' and fuzzy_match(decision.from_title, pages_paragraphs[0][1]):
+                section.date = decision.date
+                corrected_date = True
+            # Pertinence decisions.
+            if decision.decision_type == 'pertinence' and fuzzy_match(decision.from_title, pages_paragraphs[0][1]):
+                section.pertinence = decision.pertinence_status
+        # After applying decisions, if they do not include
+        # changing the type to meta.
+        if not meta:
+            # Finally add the text content.
+            additional_sections = section.add_to_text(
+                    pages_paragraphs,
+                    manual_decisions, meta_sections_buffer, config,
+                    # indices need to be already incremented for the
+                    # main section that we will add
+                    current_document_id+1)
+            for add_section in additional_sections:
+                add_section.join_to_list(sections)
+            current_document_id += len([sec for sec
+                in additional_sections if sec.section_type == 'document'])
+            if not corrected_date:
+                section.guess_date()
+            section.join_to_list(sections)
+            for meta_section in meta_sections_buffer:
+                # See if needs to be merged to a recently
+                # commited document section.
+                if merge_possible(manual_decisions, meta_section.pages_paragraphs[0]):
+                    meta_additional_sections = find_doc_and_merge(sections,
+                            meta_section.pages_paragraphs, manual_decisions,
+                            meta_sections_buffer, config, current_document_id)
+                else:
+                    meta_additional_sections = False
+                if meta_additional_sections:
+                    if isinstance(meta_additional_sections, list):
+                        for add_section in meta_additional_sections:
+                            add_section.join_to_list(sections)
+                else:
+                    meta_section.join_to_list(sections)
+            # We need to do it this way to actually empty the provided list.
+            del meta_sections_buffer[:]
+            current_document_id += 1
+            latest_doc_section_n = ''.join([s.section_type[0] for s in sections]).rfind('d')
+    return current_document_id, latest_doc_section_n

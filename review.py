@@ -239,23 +239,44 @@ class ReviewShell(Cmd):
         self.commit_save(decision, sections_state)
         self.do_section('')
 
-    def do_merge(self, ignored_args):
-        """Merge the current section with the previous document section."""
+    def do_merge(self, after_n):
+        """Merge the current section with the previous document section. An
+        argument can be supplied that specifies after which paragraph insert
+        the merged document's content."""
         global current_section_n
+        if after_n != '':
+            try:
+                after_n = int(after_n)
+            except ValueError:
+                print('Invalid paragraph number.')
+                return
         previous_document_n = False
         for section_n in reversed(range(current_section_n)):
             if edition_sections[section_n].section_type == 'document':
                 previous_document_n = section_n
                 break
+        if after_n != '':
+            if after_n+1 >= len(edition_sections[previous_document_n].pages_paragraphs) or after_n < 0:
+                print('There is no paragraph numbered {}'.format(after_n))
+                return
         if previous_document_n:
             # We want to save the previous document section as the one that
             # will be actually modified.
             sections_state = saved_section_list(previous_document_n)
             section = edition_sections[current_section_n]
-            decision = MergeSectionDecision(section.title(), section.start_page(),
-                    edition_sections[previous_document_n].pages_paragraphs[-1][1][-80:],
-                    section.pages_paragraphs[0][1][:80])
-            edition_sections[previous_document_n].pages_paragraphs += edition_sections[current_section_n].pages_paragraphs
+            if after_n == '':
+                decision = MergeSectionDecision(section.title(), section.start_page(),
+                        edition_sections[previous_document_n].pages_paragraphs[-1][1][-80:],
+                        section.pages_paragraphs[0][1][:80])
+                edition_sections[previous_document_n].pages_paragraphs += edition_sections[current_section_n].pages_paragraphs
+            else:
+                decision = MergeSectionDecision(section.title(), section.start_page(),
+                        edition_sections[previous_document_n].pages_paragraphs[after_n][1][-80:],
+                        section.pages_paragraphs[0][1][:80])
+                edition_sections[previous_document_n].pages_paragraphs += (
+                        edition_sections[previous_document_n].pages_paragraphs[:after_n+1]
+                        + edition_sections[current_section_n].pages_paragraphs
+                        + edition_sections[previous_document_n].pages_paragraphs[after_n+1:])
             del edition_sections[current_section_n]
             current_section_n = previous_document_n
             self.commit_save(decision, sections_state)
