@@ -1,4 +1,4 @@
-import re
+import os, re
 
 import pexpect
 
@@ -111,7 +111,7 @@ def morfeusz_analysis(morfeusz_process, text):
     morfeusz_interp = morfeusz_interp[morfeusz_interp.index('['):]
     return morfeusz_interp
 
-def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=False):
+def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=False, mark_unknowns=True):
     """Use Morfeusz and Concraft to obtain the sentences as lists of (form, lemma, interp)"""
     if sents_str.strip() == '':
         raise ValueError('called parse_sentences on empty string')
@@ -122,6 +122,12 @@ def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=Fa
     if verbose:
         print(len(parsed_nodes), 'parsed nodes')
 
+    unknowns = set()
+    if mark_unknowns:
+        for node_variants in parsed_nodes:
+            if len([variant for variant in node_variants if variant[4][:3] != 'ign']) == 0:
+                unknowns.add(node_variants[0][2])
+
     morfeusz_sentences = split_morfeusz_sents(parsed_nodes, verbose=verbose)
     if verbose:
         print('Morfeusz sentences,', len(morfeusz_sentences), ':', morfeusz_sentences)
@@ -131,5 +137,10 @@ def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=Fa
         else:
             write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent, append_sentence=True)
     parsed_sents = parse_with_concraft(concraft_model_path, 'MORFEUSZ_CONCRAFT_TEMP')
-    #os.remove('MORFEUSZ_CONCRAFT_TEMP')
+    os.remove('MORFEUSZ_CONCRAFT_TEMP')
+    if mark_unknowns:
+        for si, sent in enumerate(parsed_sents):
+            for ti, token_data in enumerate(sent):
+                if token_data[0] in unknowns:
+                    parsed_sents[si][ti] = tuple(['??_'+token_data[0]] + list(token_data)[1:])
     return parsed_sents
