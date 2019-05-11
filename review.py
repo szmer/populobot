@@ -3,8 +3,7 @@ from cmd import Cmd
 from copy import copy, deepcopy
 import yaml
 
-from load import load
-from popbot_src.indexing_common import load_indexed
+from popbot_src.indexing_common import load_indexed, load_edition
 from popbot_src.manual_decision import DateDecision, MergeSectionDecision, SplitSectionDecision, PertinenceDecision, TitleFormDecision, TypeDecision
 
 argparser = argparse.ArgumentParser(description='Review and correct source edition indexing performed by the loading script.')
@@ -16,7 +15,7 @@ args = argparser.parse_args()
 preloaded_decisions = []
 if args.preload:
     loading_stream = io.StringIO()
-    load(args.loading_file_path, manual_decisions_file=args.preload, output_stream=loading_stream)
+    load_edition(args.loading_file_path, manual_decisions_file=args.preload, output_stream=loading_stream)
     loading_stream.seek(0)
     edition_sections = load_indexed(loading_stream)
     with open(args.preload) as decisions_file:

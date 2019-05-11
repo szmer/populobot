@@ -108,6 +108,9 @@ class Section():
                     + self.pages_paragraphs[after_n+1:])
         else:
             self.pages_paragraphs += added_pages_paragraphs
+        for add_section in additional_sections:
+            if add_section.section_type == 'document':
+                add_section.guess_date()
         return additional_sections
 
     def merge_if(self, manual_decisions, merged_paragraphs, meta_sections_buffer, config,
