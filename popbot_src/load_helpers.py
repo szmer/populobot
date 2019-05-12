@@ -27,7 +27,16 @@ def is_meta_fragment(fragment, config):
     # If a large part of the fragment of non-alphabetic (re.sub removes alphabetics for the check)
     if len(fragment) > 0 and len(re.sub('[^\\W0-9]', '', fragment)) / len(fragment) >= 0.65:
         return True
-
+    # If almost a majority of the fragment's tokens are very short (happens in footnotes)
+    tokens = re.split('\\s', fragment)
+    if len([t for t in tokens if len(t) <= 2]) > 0.48 * len(tokens):
+        return True
+    # If the majority of words are capitalized or numbers.
+    if len([t for t in tokens if t[0] != t[0].lower() or re.search('[\\W0-9]', t[0])]) > 0.65 * len(tokens):
+        return True
+    # If there is very few kinds of characters used
+    if len(fragment) in range(2, 17) and len(set(fragment.lower())) <= max(2, len(fragment) / 3):
+        return True
     # If large percentage of tokens is abbreviated
     ###if fragment.count(' ') > 0 and fragment.count('. ') / fragment.count(' ') >= 0.33:
     ###    return True
