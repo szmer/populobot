@@ -61,10 +61,19 @@ class ReviewShell(Cmd):
         global current_section_n
         self.print_section(current_section_n)
 
-    def do_pars(self, ignored_args):
-        """Print numbered paragraph snippets from the current section."""
+    def do_pars(self, limit):
+        """Print numbered paragraph snippets from the current section. An
+        argument can put upper cap on how many paragraphs should be printed."""
         global current_section_n
+        if limit != '':
+            try:
+                limit = int(limit)
+            except ValueError:
+                print('Invalid limit.')
+                return
         for par_n, (scanpage, paragraph) in enumerate(edition_sections[current_section_n].pages_paragraphs):
+            if limit != '' and par_n == limit:
+                break
             print('{}: "{}"'.format(par_n, paragraph[:100]))
 
     def do_full(self, paragraph_n):
@@ -125,6 +134,32 @@ class ReviewShell(Cmd):
             self.do_section('')
         else:
             print('Already at the end of the edition.')
+
+    def do_pd(self, ignored_args):
+        """Go to the previous document section."""
+        global current_section_n
+        section_n = current_section_n-1
+        while section_n >= 0:
+            if edition_sections[section_n].section_type == 'document':
+                current_section_n = section_n
+                self.do_section('')
+                break
+            section_n -= 1
+        else:
+            print('Cannot find the previous document section.')
+
+    def do_nd(self, ignored_args):
+        """Go to the next document section."""
+        global current_section_n
+        section_n = current_section_n+1
+        while section_n < len(edition_sections):
+            if edition_sections[section_n].section_type == 'document':
+                current_section_n = section_n
+                self.do_section('')
+                break
+            section_n += 1
+        else:
+            print('Cannot find the next document section.')
 
     def do_undo(self, ignored_args):
         """Undo the last correction decision."""

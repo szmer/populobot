@@ -233,20 +233,20 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
                     else:
                         # Since the section wasn't yet created, we don't need to go
                         # through the .add_text Section method, it will be called later
-                        current_document_paragraphs.append((page_n, possible_heading))
+                        current_document_paragraphs.append((possible_heading_page, possible_heading))
                     possible_heading = False
+                # Commit the previous document, without what we decided to be a heading.
+                if commit_previous:
+                    commit_previous = False
+                    if len(current_document_paragraphs) > 0:
+                        current_document_id, latest_doc_section_n = commit_doc_with_decisions(
+                                config, sections, current_document_paragraphs, manual_decisions,
+                                meta_sections_buffer, current_document_id, latest_doc_section_n)
+                    current_document_paragraphs = [(possible_heading_page, new_title)]
                 heading_score_estimation = heading_score(paragraph, config)
                 previous_heading_score = heading_score_estimation
                 possible_heading = paragraph
                 possible_heading_page = page_n
-            # Commit the previous document, without what we decided to be a heading.
-            if commit_previous:
-                commit_previous = False
-                if len(current_document_paragraphs) > 0:
-                    current_document_id, latest_doc_section_n = commit_doc_with_decisions(
-                            config, sections, current_document_paragraphs, manual_decisions,
-                            meta_sections_buffer, current_document_id, latest_doc_section_n)
-                current_document_paragraphs = [(possible_heading_page, new_title)]
     # If something remains in the document buffer, commit it.
     if possible_heading:
         if config['ignore_page_ranges']:
