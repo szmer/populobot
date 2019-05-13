@@ -304,14 +304,14 @@ class ReviewShell(Cmd):
                 decision = MergeSectionDecision(section.title(), section.start_page(),
                         edition_sections[previous_document_n].pages_paragraphs[-1][1][-80:],
                         section.pages_paragraphs[0][1][:80])
-                edition_sections[previous_document_n].pages_paragraphs += edition_sections[current_section_n].pages_paragraphs
+                edition_sections[previous_document_n].pages_paragraphs += section.pages_paragraphs
             else:
                 decision = MergeSectionDecision(section.title(), section.start_page(),
                         edition_sections[previous_document_n].pages_paragraphs[after_n][1][-80:],
                         section.pages_paragraphs[0][1][:80])
-                edition_sections[previous_document_n].pages_paragraphs += (
+                edition_sections[previous_document_n].pages_paragraphs = (
                         edition_sections[previous_document_n].pages_paragraphs[:after_n+1]
-                        + edition_sections[current_section_n].pages_paragraphs
+                        + section.pages_paragraphs
                         + edition_sections[previous_document_n].pages_paragraphs[after_n+1:])
             del edition_sections[current_section_n]
             current_section_n = previous_document_n
