@@ -195,7 +195,8 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
         paragraphs = page.split('\n\n')
         page_decisions = manual_decisions[page_n]
         for paragraph in paragraphs:
-            if len(paragraph.strip()) == 0:
+            paragraph = paragraph.strip()
+            if len(paragraph) == 0:
                 continue
             commit_previous = False # we need to do that if we've encountered a heading
             new_title = False # we will store it here to set after commiting the previous one

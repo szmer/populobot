@@ -28,7 +28,7 @@ def is_meta_fragment(fragment, config):
     if len(fragment) > 0 and len(re.sub('[^\\W0-9]', '', fragment)) / len(fragment) >= 0.65:
         return True
     # If almost a majority of the fragment's tokens are very short (happens in footnotes)
-    tokens = re.split('\\s', fragment)
+    tokens = [t for t in re.split('\\s', fragment) if len(t) > 0]
     if len([t for t in tokens if len(t) <= 2]) > 0.48 * len(tokens):
         return True
     # If the majority of words are capitalized or numbers.
@@ -49,7 +49,7 @@ heading_signs_1ord = ([
     re.compile('^\\[.*\\]')]
     +
     # titles - each of those will count as one occurence of a sign
-    [re.compile(s) for s in ['Artyk', 'Uchwał[ay]', 'Deklarac', 'Postanowien', 'Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'App?robac[yj]a', 'Konfederacy?j?', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Articuli', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Kwit\\s']])
+    [re.compile(s) for s in ['Artyk', 'Uchwał[ay]', 'Deklarac', 'Postanowien', 'Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'App?robac[yj]a', 'Konfederacy?j?', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Popis', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Articuli', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Kwit\\s']])
 heading_signs_2ord = ([
     re.compile('\\d+'),
     # numbers put in words
@@ -74,7 +74,7 @@ heading_antisigns = ([
     [re.compile(s) for s in ['[aeu]j[ąe][,\.\\s]', '[ae]my[,\.\\s]', '[aeyi]ć[,\.\\s]', '[iyaeąę]ł[ay]?[,\.\\s]', '[iae[iaeąę]]li?[,\.\\s]', '[sś]my[,\.\\s]', 'ąc[aey]?[mj]?u?[,\.\\s]', '[aoe]n[yieaą][jm]?[,\.\\s]', 'wszy[,\.\\s]', 'eni[ea]m?[,\.\\s]']]
     +
     # other out of place vocabulary
-    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód']])
+    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód', 'dokumentacja', 'literatura', 'wierzytelna', ' s\\. ']])
 
 def heading_score(section, config, verbose=False):
     if len(section) < 15 or len(section) > config['max_heading_len']:
