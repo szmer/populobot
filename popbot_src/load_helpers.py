@@ -32,7 +32,7 @@ def is_meta_fragment(fragment, config):
     if len([t for t in tokens if len(t) <= 2]) > 0.48 * len(tokens):
         return True
     # If the majority of words are capitalized or numbers.
-    if len([t for t in tokens if t[0] != t[0].lower() or re.search('[\\W0-9]', t[0])]) > 0.65 * len(tokens):
+    if ((len([t for t in tokens if t[0] != t[0].lower() or re.search('[\\W0-9]', t[0])])) > 0.65 * len(tokens)):
         return True
     # If there is very few kinds of characters used
     if len(fragment) in range(2, 17) and len(set(fragment.lower())) <= max(2, len(fragment) / 3):
