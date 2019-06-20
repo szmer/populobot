@@ -104,6 +104,10 @@ def heading_score(section, config, verbose=False):
         signs_2ord_count -= 1.5
         if verbose:
             print('-1.5 from no first-order signs')
+    elif len([s.search(section) for s in heading_signs_1ord[:25]]):
+        signs_2ord_count -= 1.0
+        if verbose:
+            print('-1.0 from no first-order signs in the first 25 characters')
     signs_count = signs_1ord_count + signs_2ord_count
     antisigns = [s.search(section) for s in heading_antisigns]
     antisigns_count = len([s for s in antisigns if s]) * 0.6
