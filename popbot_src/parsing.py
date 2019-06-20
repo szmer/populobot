@@ -123,10 +123,14 @@ def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=Fa
         print(len(parsed_nodes), 'parsed nodes')
 
     unknowns = set()
+    proper_names = set()
     if mark_unknowns:
         for node_variants in parsed_nodes:
             if len([variant for variant in node_variants if variant[4][:3] != 'ign']) == 0:
                 unknowns.add(node_variants[0][2])
+            if len([variant for variant in node_variants
+                if not 'nazwisko' in variant[5] and not re.search('nazwa (?!:posp)', variant[5])]) == 0:
+                proper_names.add(node_variants[0][2])
 
     morfeusz_sentences = split_morfeusz_sents(parsed_nodes, verbose=verbose)
     if verbose:
@@ -143,4 +147,6 @@ def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=Fa
             for ti, token_data in enumerate(sent):
                 if token_data[0] in unknowns:
                     parsed_sents[si][ti] = tuple(['??_'+token_data[0]] + list(token_data)[1:])
+                if token_data[0] in proper_names:
+                    parsed_sents[si][ti] = tuple(['PN_'+token_data[0]] + list(token_data)[1:])
     return parsed_sents

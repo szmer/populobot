@@ -31,8 +31,6 @@ for section in sections:
                 parsed_paragraph += ' '.join([':'.join(interp) for interp in sent]) + '\n'
             new_pages_paragraphs.append((page, parsed_paragraph))
         section.pages_paragraphs = new_pages_paragraphs
-
-for section in sections:
     if args.strip_meta and section.section_type == 'meta':
         continue
     for row in section.row_strings():
