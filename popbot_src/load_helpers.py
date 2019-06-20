@@ -66,9 +66,10 @@ def is_meta_fragment(fragment, config):
     if len([t for t in tokens if len(t) <= 2]) > 0.48 * len(tokens):
         return True
     # If there are fully uppercase words.
-    for t in tokens:
-        if len(t) > 3 and re.sub('[IVXCLM]', '', t) != t and t == t.upper() and t != t.lower():
-            return True
+    if len(tokens) < 10:
+        for t in tokens:
+            if len(t) > 3 and re.sub('[IVXCLM]', '', t) != t and t == t.upper() and t != t.lower():
+                return True
     # If the majority of words are capitalized or numbers.
     if ((len([t for t in tokens if t[0] != t[0].lower() or re.search('[\\W0-9]', t[0])])) > 0.65 * len(tokens)):
         # Be more liberal if may be a section.
