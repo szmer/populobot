@@ -2,7 +2,6 @@ import doctest, re, roman
 
 MONTHS = '(stycze?[nń])|(luty?)|(marz?e?c)|(kwie[tc]i?e?[nń])|(maj)|(czerwi?e?c)|(lipi?e?c)|(sierpi?e?[nń])|(wrze[sś]i?e?[nń])|(październik)|(listopad)|(grudz?i?e?[nń])|([ji]anuar)|(februar)|(mart)|(april)|(mai)|([ji]u[nl]i)|(august)|(septemb)|(octob)|(decemb)'
 
-# Meta section detection.
 meta_signs = [ # characteristic elements for a meta section
             # page range at the end
             re.compile('\\d+-\\d+\\.$'),
@@ -19,30 +18,7 @@ meta_signs = [ # characteristic elements for a meta section
             # anachronistic vocabulary
             re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( tek[sś])|( str\\.)', flags=re.IGNORECASE)
         ]
-def is_meta_fragment(fragment, config):
-    for sign in meta_signs:
-        if sign.search(fragment):
-            ###print(sign, fragment)
-            return True
-    # If a large part of the fragment of non-alphabetic (re.sub removes alphabetics for the check)
-    if len(fragment) > 0 and len(re.sub('[^\\W0-9]', '', fragment)) / len(fragment) >= 0.65:
-        return True
-    # If almost a majority of the fragment's tokens are very short (happens in footnotes)
-    tokens = [t for t in re.split('\\s', fragment) if len(t) > 0]
-    if len([t for t in tokens if len(t) <= 2]) > 0.48 * len(tokens):
-        return True
-    # If the majority of words are capitalized or numbers.
-    if ((len([t for t in tokens if t[0] != t[0].lower() or re.search('[\\W0-9]', t[0])])) > 0.65 * len(tokens)):
-        return True
-    # If there is very few kinds of characters used
-    if len(fragment) in range(2, 17) and len(set(fragment.lower())) <= max(2, len(fragment) / 3):
-        return True
-    # If large percentage of tokens is abbreviated
-    ###if fragment.count(' ') > 0 and fragment.count('. ') / fragment.count(' ') >= 0.33:
-    ###    return True
-    return False
 
-# Headings detection.
 # Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
 heading_signs_1ord = ([ 
     # square brackets used to number sections in editions
@@ -76,6 +52,38 @@ heading_antisigns = ([
     # other out of place vocabulary
     [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód', 'dokumentacja', 'literatura', 'wierzytelna', ' s\\. ']])
 
+# Meta section detection.
+def is_meta_fragment(fragment, config):
+    for sign in meta_signs:
+        if sign.search(fragment):
+            ###print(sign, fragment)
+            return True
+    # If a large part of the fragment of non-alphabetic (re.sub removes alphabetics for the check)
+    if len(fragment) > 0 and len(re.sub('[^\\W0-9]', '', fragment)) / len(fragment) >= 0.65:
+        return True
+    # If almost a majority of the fragment's tokens are very short (happens in footnotes)
+    tokens = [t for t in re.split('\\s', fragment) if len(t) > 0]
+    if len([t for t in tokens if len(t) <= 2]) > 0.48 * len(tokens):
+        return True
+    # If there are fully uppercase words.
+    for t in tokens:
+        if len(t) > 3 and re.sub('[IVXCLM]', '', t) != t and t == t.upper() and t != t.lower():
+            return True
+    # If the majority of words are capitalized or numbers.
+    if ((len([t for t in tokens if t[0] != t[0].lower() or re.search('[\\W0-9]', t[0])])) > 0.65 * len(tokens)):
+        # Be more liberal if may be a section.
+        signs_1ord = [s.search(fragment) for s in heading_signs_1ord]
+        if len(signs_1ord) <= 1:
+            return True
+    # If there is very few kinds of characters used
+    if len(fragment) in range(2, 17) and len(set(fragment.lower())) <= max(2, len(fragment) / 3):
+        return True
+    # If large percentage of tokens is abbreviated
+    ###if fragment.count(' ') > 0 and fragment.count('. ') / fragment.count(' ') >= 0.33:
+    ###    return True
+    return False
+
+# Headings detection.
 def heading_score(section, config, verbose=False):
     if len(section) < 15 or len(section) > config['max_heading_len']:
         return -1.5
