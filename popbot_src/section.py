@@ -196,8 +196,11 @@ class Section():
     def from_csv_row(cls, row):
         self = cls()
         self.book_title = row[0]
-        self.inbook_section_id = row[1]
-        self.inbook_document_id = row[2]
+        self.inbook_section_id = int(row[1])
+        try:
+            self.inbook_document_id = int(row[2])
+        except:
+            self.inbook_document_id = row[2]
         #self.scan_page #= #row[3]
         #self.book_page #= #row[4]
         self.section_type = row[4]
@@ -212,7 +215,7 @@ class Section():
 
     def append_csv_row(self, row):
         """Returns True if successful, False if the row doesn't belong to the section."""
-        if row[1] == self.inbook_section_id:
+        if str(row[1]) == str(self.inbook_section_id):
             self.pages_paragraphs.append((int(row[3]), row[10]))
             return True
         return False

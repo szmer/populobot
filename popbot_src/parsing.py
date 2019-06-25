@@ -104,7 +104,7 @@ def parse_with_concraft(concraft_model_path, input_path):
 def morfeusz_analysis(morfeusz_process, text):
     text = text.replace('\n', ' ').replace('[', '(').replace(']', ')') # square brackets can mess up parse detection in output
     morfeusz_process.send(text+' KONIECKONIEC\n')
-    pexp_result = morfeusz_process.expect(['\r\n\\[\\d+,\\d+,KONIECKONIEC,KONIECKONIEC,ign,_,_\\]\r\n', pexpect.EOF, pexpect.TIMEOUT])
+    pexp_result = morfeusz_process.expect(['\r\n\\[\\d+,\\d+,KONIECKONIEC,KONIECKONIEC,ign,_,_\\]\r\n', pexpect.EOF, pexpect.TIMEOUT], timeout=10*60)
     if pexp_result != 0:
         raise RuntimeError('there was a Morfeusz error: {}'.format(morfeusz_process.before))
     morfeusz_interp = morfeusz_process.before.decode().strip() # encode from bytes into str, strip whitespace
@@ -115,33 +115,43 @@ def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=Fa
     """Use Morfeusz and Concraft to obtain the sentences as lists of (form, lemma, interp)"""
     if sents_str.strip() == '':
         raise ValueError('called parse_sentences on empty string')
-    morfeusz_interp = morfeusz_analysis(morfeusz_process, sents_str)
-    if verbose:
-        print('Morfeusz interp is', morfeusz_interp)
-    parsed_nodes = parse_morfeusz_output(morfeusz_interp)
-    if verbose:
-        print(len(parsed_nodes), 'parsed nodes')
-
+    parsed_sents = []
     unknowns = set()
     proper_names = set()
-    if mark_unknowns:
-        for node_variants in parsed_nodes:
-            if len([variant for variant in node_variants if variant[4][:3] != 'ign']) == 0:
-                unknowns.add(node_variants[0][2])
-            if len([variant for variant in node_variants
-                if not 'nazwisko' in variant[5] and not re.search('nazwa (?!:posp)', variant[5])]) == 0:
-                proper_names.add(node_variants[0][2])
+    parsed_boundary = 0
+    chunk_size = 2500#200*115
+    while len(sents_str) != parsed_boundary:
+        previous_parsed_boundary = parsed_boundary
+        parsed_boundary = sents_str[:parsed_boundary+chunk_size].rfind(' ')
+        if parsed_boundary == -1 or previous_parsed_boundary+chunk_size >= len(sents_str):
+            parsed_boundary = len(sents_str)
+        str_chunk = sents_str[previous_parsed_boundary:parsed_boundary]
 
-    morfeusz_sentences = split_morfeusz_sents(parsed_nodes, verbose=verbose)
-    if verbose:
-        print('Morfeusz sentences,', len(morfeusz_sentences), ':', morfeusz_sentences)
-    for sent_n, morf_sent in enumerate(morfeusz_sentences):
-        if sent_n == 0:
-            write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent)
-        else:
-            write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent, append_sentence=True)
-    parsed_sents = parse_with_concraft(concraft_model_path, 'MORFEUSZ_CONCRAFT_TEMP')
-    os.remove('MORFEUSZ_CONCRAFT_TEMP')
+        morfeusz_interp = morfeusz_analysis(morfeusz_process, str_chunk)
+        if verbose:
+            print('Morfeusz interp is', morfeusz_interp)
+        parsed_nodes = parse_morfeusz_output(morfeusz_interp)
+        if verbose:
+            print(len(parsed_nodes), 'parsed nodes')
+
+        if mark_unknowns:
+            for node_variants in parsed_nodes:
+                if len([variant for variant in node_variants if variant[4][:3] != 'ign']) == 0:
+                    unknowns.add(node_variants[0][2])
+                if len([variant for variant in node_variants
+                    if not 'nazwisko' in variant[5] and not re.search('nazwa (?!:posp)', variant[5])]) == 0:
+                    proper_names.add(node_variants[0][2])
+
+        morfeusz_sentences = split_morfeusz_sents(parsed_nodes, verbose=verbose)
+        if verbose:
+            print('Morfeusz sentences,', len(morfeusz_sentences), ':', morfeusz_sentences)
+        for sent_n, morf_sent in enumerate(morfeusz_sentences):
+            if sent_n == 0:
+                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent)
+            else:
+                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent, append_sentence=True)
+        parsed_sents += parse_with_concraft(concraft_model_path, 'MORFEUSZ_CONCRAFT_TEMP')
+        os.remove('MORFEUSZ_CONCRAFT_TEMP')
     if mark_unknowns:
         for si, sent in enumerate(parsed_sents):
             for ti, token_data in enumerate(sent):

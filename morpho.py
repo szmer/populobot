@@ -9,9 +9,11 @@ argparser.add_argument('dict_dir')
 argparser.add_argument('dict_name')
 argparser.add_argument('concraft_model_path')
 argparser.add_argument('indexed_file_path')
-argparser.add_argument('strip_meta', action='store_true')
+argparser.add_argument('--strip_meta', action='store_true')
+argparser.add_argument('--start_section', type=int, default=-1)
 
 args = argparser.parse_args()
+start_section = False
 
 with open(args.indexed_file_path) as indexed_file:
     sections = load_indexed(indexed_file)
@@ -21,10 +23,16 @@ pexp_result = morfeusz_analyzer.expect(['Using dictionary: [^\\n]*$', pexpect.EO
 if pexp_result != 0:
     raise RuntimeError('cannot run morfeusz_analyzer properly')
 
+section_counter = -1
 for section in sections:
+    section_counter += 1
+    if section_counter < args.start_section:
+        continue
     if section.section_type == 'document':
         new_pages_paragraphs = []
         for (page, paragraph) in section.pages_paragraphs:
+            if len(paragraph.strip()) == 0:
+                continue
             parsed_sentences = parse_sentences(morfeusz_analyzer, args.concraft_model_path, paragraph)
             parsed_paragraph = ''
             for sent in parsed_sentences:
