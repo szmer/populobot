@@ -1,0 +1,12 @@
+{
+	"book_title": "Rządy sejmikowe w epoce królów elekcyjnych 1572-1795, t. III",
+	"palatinate": "inowrocławskie i brzeskokujawskie",
+	"convent_location": "województwa inowrocławskie i brzeskokujawskie",
+	"default_convent_author": "sejmik województw inowrocławskiego i brzeskokujawskiego",
+	"path": "../lauda/kujawy/lauda_i_instrukcyje_2/",
+	"prefix": "tekst-",
+	"min_inparagraph_line_len": 60,
+	"max_nonmeta_line_len": 80,
+	"max_heading_len": 200,
+	"ignore_page_ranges": [[0, 4], [250, 270]]
+}

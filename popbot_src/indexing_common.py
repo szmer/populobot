@@ -149,7 +149,7 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
     # Load the config
     config = None
     with open(config_file_path) as config_file:
-        config = json.loads(config_file.read())
+        config = json.load(config_file)
 
     # Load the manual decisions.
     manual_decisions = defaultdict(list) # page number -> a list of decisions

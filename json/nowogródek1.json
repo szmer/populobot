@@ -1,10 +1,10 @@
 {
+        "format": "html",
+        "html_file_path": "../arachuba/nowogródek1.html",
 	"book_title": "Lauda nowogródzkie, cz. I",
 	"palatinate": "nowogródzkie",
 	"convent_location": "ziemia nowogródzka",
 	"default_convent_author": "sejmik ziemi nowogródzkiej",
-	"path": "../lauda/",
-	"prefix": "Nowogródek_zbiór1632-",
 	"min_inparagraph_line_len": 60,
 	"max_nonmeta_line_len": 5000,
 	"max_heading_len": 5000,

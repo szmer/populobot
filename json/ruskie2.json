@@ -1,0 +1,12 @@
+{
+	"book_title": "Akta grodzkie i ziemskie z czasów Rzeczypospolitej Polskiej z archiwum tak zwanego bernardyńskiego we Lwowie: tom XX. Lauda sejmikowe: tom II. Lauda wiszeńskie 1648-1673",
+	"palatinate": "ruskie",
+	"convent_location": "województwo ruskie",
+	"default_convent_author": "sejmik województwa ruskiego",
+	"path": "../lauda/wisznia/wisznia2/",
+	"prefix": "tekst-",
+	"min_inparagraph_line_len": 79,
+	"max_nonmeta_line_len": 110,
+	"max_heading_len": 280,
+	"ignore_page_ranges": [[0, 31], [671, 787]]
+}
