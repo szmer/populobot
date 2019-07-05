@@ -7,6 +7,7 @@ from popbot_src.load_helpers import is_meta_fragment
 
 argparser = argparse.ArgumentParser(description='Load and index an edition of sejmik resolutions from a HTML doc exported from LibreOffice writer.')
 argparser.add_argument('config_file_path')
+argparser.add_argument('--strip_ruthenian', action='store_true')
 
 args = argparser.parse_args()
 
@@ -21,6 +22,8 @@ with open(config['html_file_path']) as html_file:
     doc = BeautifulSoup(html_file.read(), 'html.parser')
     for html_par in doc.body.contents:
         if not isinstance(html_par, Tag):
+            continue
+        if args.strip_ruthenian and len(html_par.findAll(attrs={'lang': 'ru-RU'})) > 0:
             continue
         # A heading.
         if html_par.name == 'ol' and len(html_par.findAll('li')) == 1:

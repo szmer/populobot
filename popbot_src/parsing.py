@@ -147,11 +147,11 @@ def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=Fa
             print('Morfeusz sentences,', len(morfeusz_sentences), ':', morfeusz_sentences)
         for sent_n, morf_sent in enumerate(morfeusz_sentences):
             if sent_n == 0:
-                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent)
+                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP2', morf_sent)
             else:
-                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent, append_sentence=True)
-        parsed_sents += parse_with_concraft(concraft_model_path, 'MORFEUSZ_CONCRAFT_TEMP')
-        os.remove('MORFEUSZ_CONCRAFT_TEMP')
+                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP2', morf_sent, append_sentence=True)
+        parsed_sents += parse_with_concraft(concraft_model_path, 'MORFEUSZ_CONCRAFT_TEMP2')
+        os.remove('MORFEUSZ_CONCRAFT_TEMP2')
     if mark_unknowns:
         for si, sent in enumerate(parsed_sents):
             for ti, token_data in enumerate(sent):

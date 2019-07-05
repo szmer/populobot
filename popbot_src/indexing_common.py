@@ -4,6 +4,8 @@ from copy import copy
 from itertools import chain
 import yaml
 
+csv.field_size_limit(100000000)
+
 from popbot_src.section import Section
 from popbot_src.load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match
 
