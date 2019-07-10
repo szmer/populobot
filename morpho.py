@@ -36,7 +36,7 @@ for section in sections:
             parsed_sentences = parse_sentences(morfeusz_analyzer, args.concraft_model_path, paragraph)
             parsed_paragraph = ''
             for sent in parsed_sentences:
-                parsed_paragraph += ' '.join([':'.join(interp) for interp in sent]) + '\n'
+                parsed_paragraph += ' '.join([repr(token) for token in sent]) + '\n'
             new_pages_paragraphs.append((page, parsed_paragraph))
         section.pages_paragraphs = new_pages_paragraphs
     if args.strip_meta and section.section_type == 'meta':

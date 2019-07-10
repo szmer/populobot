@@ -1,6 +1,14 @@
 import os, re
 
 import pexpect
+from parsed_token import ParsedToken
+
+# Setup CLTK for Latin detection.
+from cltk.corpus.utils.importer import CorpusImporter
+corpus_importer = CorpusImporter('latin')
+corpus_importer.import_corpus('latin_models_cltk')
+from cltk.semantics.latin.lookup import Lemmata
+latin_lemmatizer = Lemmata(dictionary='lemmata', language='latin')
 
 def parse_morfeusz_output(morfeusz_str):
     """Given the output from console printed by Morfeusz, parse it into lists of
@@ -84,7 +92,7 @@ def parse_with_concraft(concraft_model_path, input_path):
     if 'concraft-pl:' in concraft_interp:
         raise RuntimeError('there was a Concraft error: {}'.format(concraft_interp))
     sents = []
-    token_tuples = [] # of the current sentence
+    sent_tokens = []
     # Store the already disambiguated paths to avoid repetitions in output.
     decided_paths = []
     for line in concraft_interp.split('\n'):
@@ -94,10 +102,11 @@ def parse_with_concraft(concraft_model_path, input_path):
             decided_paths.append(str(fields[0:2]))
             if len(fields) != 11:
                 raise RuntimeError('Incorrect number of columns in Concraft output - not 11 -: {}'.format(line))
-            token_tuples.append(tuple(fields[2:5]))
+            token = ParsedToken(fields[2], fields[3], fields[4])
+            sent_tokens.append(token)
         if len(line.strip()) == 0: # end of sentence
-            sents.append(token_tuples)
-            token_tuples = []
+            sents.append(sent_tokens)
+            sent_tokens = []
     sents.remove([]) # the last empty "sentence" if present
     return sents
 
@@ -111,8 +120,8 @@ def morfeusz_analysis(morfeusz_process, text):
     morfeusz_interp = morfeusz_interp[morfeusz_interp.index('['):]
     return morfeusz_interp
 
-def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=False, mark_unknowns=True):
-    """Use Morfeusz and Concraft to obtain the sentences as lists of (form, lemma, interp)"""
+def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=False, category_sigils=True):
+    """Use Morfeusz and Concraft to obtain the sentences as lists of ParsedToken objects"""
     if sents_str.strip() == '':
         raise ValueError('called parse_sentences on empty string')
     parsed_sents = []
@@ -134,7 +143,7 @@ def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=Fa
         if verbose:
             print(len(parsed_nodes), 'parsed nodes')
 
-        if mark_unknowns:
+        if category_sigils:
             for node_variants in parsed_nodes:
                 if len([variant for variant in node_variants if variant[4][:3] != 'ign']) == 0:
                     unknowns.add(node_variants[0][2])
@@ -147,16 +156,20 @@ def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=Fa
             print('Morfeusz sentences,', len(morfeusz_sentences), ':', morfeusz_sentences)
         for sent_n, morf_sent in enumerate(morfeusz_sentences):
             if sent_n == 0:
-                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP2', morf_sent)
+                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent)
             else:
-                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP2', morf_sent, append_sentence=True)
-        parsed_sents += parse_with_concraft(concraft_model_path, 'MORFEUSZ_CONCRAFT_TEMP2')
-        os.remove('MORFEUSZ_CONCRAFT_TEMP2')
-    if mark_unknowns:
+                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent, append_sentence=True)
+        parsed_sents += parse_with_concraft(concraft_model_path, 'MORFEUSZ_CONCRAFT_TEMP')
+        os.remove('MORFEUSZ_CONCRAFT_TEMP')
+    if category_sigils:
         for si, sent in enumerate(parsed_sents):
-            for ti, token_data in enumerate(sent):
-                if token_data[0] in unknowns:
-                    parsed_sents[si][ti] = tuple(['??_'+token_data[0]] + list(token_data)[1:])
-                if token_data[0] in proper_names:
-                    parsed_sents[si][ti] = tuple(['PN_'+token_data[0]] + list(token_data)[1:])
+            for ti, token in enumerate(sent):
+                latin_lemmas = latin_lemmatizer.lookup([token.form])[0][1]
+                if (len(latin_lemmas) > 1
+                        or len([l for (l, p) in latin_lemmas if l != token.form]) > 0):
+                    parsed_sents[si][ti].latin = True
+                elif token.form in unknowns:
+                    parsed_sents[si][ti].unknown_form = True
+                if token.form in proper_names:
+                    parsed_sents[si][ti].proper_name = True
     return parsed_sents

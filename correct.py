@@ -1,6 +1,5 @@
 import argparse
 import re
-from itertools import chain
 import enchant
 
 from popbot_src.indexing_common import load_indexed
@@ -16,6 +15,7 @@ class Token():
         semantic_fields = parsed_edition_str.split('_')
         self.proper_name = 'PN' in semantic_fields
         self.unknown_form = '??' in semantic_fields
+        self.corrected = False
         self.interp = '_'.join([f for f in semantic_fields if not f in ['PN', '??']]).split(':')
         self.form = self.interp[0]
         self.lemma = self.interp[1]
@@ -25,6 +25,8 @@ class Token():
         repr_str = '{}:{}:{}'.format(self.form, self.lemma, self.interp)
         if self.unknown_form:
             repr_str = '??_' + repr_str
+        elif self.corrected:
+            repr_str = '!!_' + repr_str
         if self.proper_name:
             repr_str = 'PN_' + repr_str
         return repr_str
@@ -56,12 +58,17 @@ for form, interps in interps_dictionary.items():
 # Load the section and go through them with corrections. 
 #
 def correct_word(word, interp):
-    candidates = spellchecker.suggest(word)
+    try:
+        candidates = spellchecker.suggest(word)
+    except ValueError:
+        return False
     pruned_candidates = [cand for cand in candidates
             if (cand in interps_dictionary and interp in interps_dictionary[cand])]
     if len(pruned_candidates) > 0:
         candidates = pruned_candidates
-    return candidates[0]
+    if len(candidates) > 0:
+        return candidates[0]
+    return False
 
 with open(args.indexed_file_path) as sections_file:
     edition_sections = load_indexed(sections_file)
@@ -70,12 +77,18 @@ for section in edition_sections:
     if section.section_type == 'document':
         new_pages_paragraphs = []
         for (pg, par) in section.pages_paragraphs:
-            tokens = chain.from_iterable(re.split('\\s', par))
+            tokens = list(re.split('\\s', par))
+            tokens = [Token(t_str) for t_str in tokens if t_str.strip() != '']
             new_pages_paragraphs.append((pg, ''))
             for token in tokens:
-                if token.unknown_form:
-                    token.form = correct_word(token.form, token.interp)
-                new_pages_paragraphs[-1][1] += ' ' + repr(token)
+                if token.form.strip() != '' and token.unknown_form:
+                    correction = correct_word(token.form, token.interp)
+                    if correction:
+                        token.form = correction
+                        token.unknown_form = False
+                        token.corrected = True
+                new_pages_paragraphs[-1] = (pg, new_pages_paragraphs[-1][1] + ' ' + repr(token))
+        section.pages_paragraphs = new_pages_paragraphs
     # Print the section.
     for row in section.row_strings():
         print(row)
