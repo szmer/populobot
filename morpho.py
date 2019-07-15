@@ -3,6 +3,7 @@ import pexpect
 
 from popbot_src.indexing_common import load_indexed
 from popbot_src.parsing import parse_sentences
+from popbot.load_helpers import join_linebreaks
 
 argparser = argparse.ArgumentParser(description='Tag an indexed edition file with Morfeusz. You need to have morfeusz_analyzer and an appropriate Morfeusz dictionary.')
 argparser.add_argument('dict_dir')
@@ -10,6 +11,8 @@ argparser.add_argument('dict_name')
 argparser.add_argument('concraft_model_path')
 argparser.add_argument('indexed_file_path')
 argparser.add_argument('--strip_meta', action='store_true')
+argparser.add_argument('--leave_hyphens', action='store_true',
+        help="Don't join the word broken by lines with hyphens")
 argparser.add_argument('--start_section', type=int, default=-1)
 
 args = argparser.parse_args()
@@ -33,6 +36,8 @@ for section in sections:
         for (page, paragraph) in section.pages_paragraphs:
             if len(paragraph.strip()) == 0:
                 continue
+            if not args.leave_hyphens:
+                paragraph = join_linebreaks(paragraph)
             parsed_sentences = parse_sentences(morfeusz_analyzer, args.concraft_model_path, paragraph)
             parsed_paragraph = ''
             for sent in parsed_sentences:

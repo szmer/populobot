@@ -247,4 +247,15 @@ def fuzzy_match(str1, str2):
     # TODO make it fuzzy.
     return re.sub('\\s|(\\\\n)', '', str1) == re.sub('\\s|(\\\\n)', '', str2)
 
+def join_linebreaks(text):
+    lines = text.split('\n')
+    joined_text = ''
+    for line in lines:
+        if len(joined_text) > 0:
+            if joined_text[-1] == '-' and line[0].islower():
+                joined_text = joined_text[:-1] + line
+                continue
+        joined_text += ' ' + line
+    return joined_text
+
 doctest.testmod()
