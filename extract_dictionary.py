@@ -8,6 +8,7 @@ from popbot_src.parsed_token import ParsedToken
 argparser = argparse.ArgumentParser(description='Extract a dictionary of correct forms and morphosyntactical tags from a list of csv edition files, parsed with Morfeusz & Concraft.')
 argparser.add_argument('file_list_path')
 argparser.add_argument('--assume_all_correct', action='store_true')
+argparser.add_argument('--store_lemmas', action='store_true')
 
 args = argparser.parse_args()
 
@@ -28,9 +29,11 @@ for section in sections:
         if t.form.strip() == '' or (t.unknown_form and not args.assume_all_correct):
             continue
         if not t.form in interps_dictionary:
-            interps_dictionary[t.form] = [ ':'.join(t.interp) ]
+            interps_dictionary[t.form] = [ (t.lemma+':') if args.store_lemmas else ''
+                    +':'.join(t.interp) ]
         else:
-            interps_dictionary[t.form] += [ ':'.join(t.interp) ]
+            interps_dictionary[t.form] += [ (t.lemma+':') if args.store_lemmas else ''
+                    +':'.join(t.interp) ]
 
 # Dump the collected dictionary.
 for (form, interps) in interps_dictionary.items():
