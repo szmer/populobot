@@ -3,19 +3,11 @@ from itertools import chain
 import argparse
 
 from popbot_src.indexing_common import load_indexed
-
-class Token():
-    def __init__(self, parsed_edition_str):
-        semantic_fields = parsed_edition_str.split('_')
-        self.proper_name = 'PN' in semantic_fields
-        self.unknown_form = '??' in semantic_fields
-        self.interp = '_'.join([f for f in semantic_fields if not f in ['PN', '??']]).split(':')
-        self.form = self.interp[0]
-        self.lemma = self.interp[1]
-        self.interp = self.interp[2:]
+from popbot_src.parsed_token import ParsedToken
 
 argparser = argparse.ArgumentParser(description='Extract a dictionary of correct forms and morphosyntactical tags from a list of csv edition files, parsed with Morfeusz & Concraft.')
 argparser.add_argument('file_list_path')
+argparser.add_argument('--assume_all_correct', action='store_true')
 
 args = argparser.parse_args()
 
@@ -31,9 +23,9 @@ with open(args.file_list_path) as list_file:
 interps_dictionary = dict()
 for section in sections:
     tokens = chain.from_iterable([re.split('\\s', par) for (pg, par) in section.pages_paragraphs])
-    tokens = [Token(t_str) for t_str in tokens if t_str.strip() != '']
+    tokens = [ParsedToken.from_str(t_str) for t_str in tokens if t_str.strip() != '']
     for t in tokens:
-        if t.form.strip() == '' or t.unknown_form:
+        if t.form.strip() == '' or (t.unknown_form and not args.assume_all_correct):
             continue
         if not t.form in interps_dictionary:
             interps_dictionary[t.form] = [ ':'.join(t.interp) ]
