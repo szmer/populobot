@@ -1,10 +1,10 @@
-import argparse, json
+import argparse, json, sys
 from math import sqrt
 
 from popbot_src.indexing_common import load_document_sections
 
 argparser = argparse.ArgumentParser(description='Score quality of document indexing.')
-argparser.add_argument('--print-titles', '-t', action='store_true')
+argparser.add_argument('--print_titles', '-t', action='store_true')
 argparser.add_argument('config_path')
 argparser.add_argument('csv_path')
 
@@ -17,6 +17,9 @@ with open(args.config_path) as config_file:
 
 # Load document sections from the csv
 document_sections = load_document_sections(args.csv_path, print_titles=args.print_titles)
+if not 'dev__true_document_pages' in config:
+    print('No dev__true_document_pages specified, exiting.')
+    sys.exit(0)
 
 # Collect document lengths from both sources.
 true_document_lengths = []

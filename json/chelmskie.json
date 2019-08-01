@@ -1,0 +1,13 @@
+{
+        "format": "html",
+        "html_file_path": "../zewnetrzne/chelmskie.html",
+	"book_title": "Akta sejmikowe ziemi chełmskiej 1572-1668",
+	"palatinate": "ruskie",
+	"convent_location": "ziemia chełmska",
+	"default_convent_author": "sejmik ziemi chełmskiej",
+        "structure": "generic_doc",
+	"min_inparagraph_line_len": 60,
+	"max_nonmeta_line_len": 5000,
+	"max_heading_len": 5000,
+	"ignore_page_ranges": []
+}

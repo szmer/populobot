@@ -1,0 +1,13 @@
+{
+        "format": "html",
+        "html_file_path": "../zewnetrzne/aktawlkp1632.html",
+	"book_title": "Akta sejmikowe województw poznańskiego i kaliskiego. Lata 1632-1668",
+	"palatinate": "kaliskie, poznańskie",
+	"convent_location": "Środa Wielkopolska",
+	"default_convent_author": "sejmik województw kaliskiego i poznańskiego",
+        "structure": "generic_doc",
+	"min_inparagraph_line_len": 60,
+	"max_nonmeta_line_len": 5000,
+	"max_heading_len": 5000,
+	"ignore_page_ranges": []
+}
