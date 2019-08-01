@@ -29,10 +29,10 @@ for section in sections:
         if t.form.strip() == '' or (t.unknown_form and not args.assume_all_correct):
             continue
         if not t.form in interps_dictionary:
-            interps_dictionary[t.form] = [ (t.lemma+':') if args.store_lemmas else ''
+            interps_dictionary[t.form] = [ ((t.lemma+':') if args.store_lemmas else '')
                     +':'.join(t.interp) ]
         else:
-            interps_dictionary[t.form] += [ (t.lemma+':') if args.store_lemmas else ''
+            interps_dictionary[t.form] += [ ((t.lemma+':') if args.store_lemmas else '')
                     +':'.join(t.interp) ]
 
 # Dump the collected dictionary.

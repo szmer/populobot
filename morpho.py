@@ -3,7 +3,7 @@ import pexpect
 
 from popbot_src.indexing_common import load_indexed
 from popbot_src.parsing import parse_sentences
-from popbot.load_helpers import join_linebreaks
+from popbot_src.load_helpers import join_linebreaks
 
 argparser = argparse.ArgumentParser(description='Tag an indexed edition file with Morfeusz. You need to have morfeusz_analyzer and an appropriate Morfeusz dictionary.')
 argparser.add_argument('dict_dir')

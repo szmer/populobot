@@ -5,7 +5,7 @@ class ParsedToken():
             proper_name=False, unknown_form=False, latin=False, corrected=False):
         self.form = form
         self.lemma = lemma
-        self.interp = interp
+        self.interp = interp # as string
         self.proper_name = proper_name
         self.unknown_form = unknown_form
         self.latin = latin
@@ -20,6 +20,9 @@ class ParsedToken():
         self.unknown_form = '??' in semantic_fields
         self.latin = 'LAT' in semantic_fields
         self.corrected = '!!' in semantic_fields
+        self.form = morpho_fields[0]
+        self.lemma = morpho_fields[1]
+        self.interp = morpho_fields[2:]
         return self
 
     def __repr__(self):

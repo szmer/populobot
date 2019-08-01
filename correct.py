@@ -7,6 +7,7 @@ from popbot_src.indexing_common import load_indexed
 argparser = argparse.ArgumentParser(description='Correct a parsed (with Morfeusz&Conraft) csv file, using a dictionary generated with extract_dictionary.py and PyLucene spellchecking.')
 argparser.add_argument('indexed_file_path')
 argparser.add_argument('dictionary_file')
+argparser.add_argument('wordlist')
 argparser.add_argument('--use_lemmas', action='store_true')
 
 args = argparser.parse_args()
@@ -52,7 +53,7 @@ with open(args.dictionary_file) as dict_file:
 #
 # Set up Enchant spellchecking.
 #
-spellchecker = enchant.Dict(tag='pl_PL')
+spellchecker = enchant.DictWithPWL(tag='pl_PL', pwl=args.wordlist)
 for form, tags in tags_dictionary.items():
     spellchecker.add(form)
 
@@ -77,13 +78,16 @@ def correct_word_with_lemma(word, tag):
     try:
         candidates = spellchecker.suggest(word)
     except ValueError:
-        return False
+        return False, False
     for cand in candidates:
         if cand in tags_dictionary:
             delemmatized_tags = [':'.join(tag.split(':')[1:]) for tag in tags_dictionary[cand]]
-            chosen_tag_n = delemmatized_tags.find(tag)
-            if chosen_tag_n != -1:
-                return cand, tags_dictionary[chosen_tag_n].split(':')[0]
+            try:
+                chosen_tag_n = delemmatized_tags.index(tag)
+                return cand, tags_dictionary[cand][chosen_tag_n].split(':')[0]
+            except:
+                pass
+    return False, False
 
 with open(args.indexed_file_path) as sections_file:
     edition_sections = load_indexed(sections_file)

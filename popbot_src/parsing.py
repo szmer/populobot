@@ -1,7 +1,7 @@
 import os, re
 
 import pexpect
-from parsed_token import ParsedToken
+from popbot_src.parsed_token import ParsedToken
 
 # Setup CLTK for Latin detection.
 from cltk.corpus.utils.importer import CorpusImporter
