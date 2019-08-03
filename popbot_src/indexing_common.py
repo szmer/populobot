@@ -7,7 +7,7 @@ import yaml
 csv.field_size_limit(100000000)
 
 from popbot_src.section import Section
-from popbot_src.load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match
+from popbot_src.load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match, is_pertinent
 
 def load_indexed(csv_file):
     edition_sections = []
@@ -29,7 +29,9 @@ def load_document_sections(csv_path, print_titles=False):
         if section.section_type == 'document':
             document_sections.append(section)
             if print_titles:
-                print(section.title())
+                pertinence_sign = ('*' if section.section_type == 'document'
+                        and not section.pertinence else '')
+                print(pertinence_sign + section.title())
     return document_sections
 
 def merge_possible(manual_decisions, page_paragraph):
@@ -81,6 +83,7 @@ def commit_doc_with_decisions(config, sections, pages_paragraphs, manual_decisio
         # Apply corrections before adding the text and commiting
         # (split decisions will be applied then).
         corrected_date = False
+        corrected_pertinence = False
         meta = False
         # Get page decisions for all the pages of the document.
         page_decisions = chain.from_iterable([manual_decisions[pn]
@@ -107,6 +110,7 @@ def commit_doc_with_decisions(config, sections, pages_paragraphs, manual_decisio
             # Pertinence decisions.
             if decision.decision_type == 'pertinence' and fuzzy_match(decision.from_title, pages_paragraphs[0][1]):
                 section.pertinence = decision.pertinence_status
+                corrected_pertinence = True
         # After applying decisions, if they do not include
         # changing the type to meta.
         if not meta:
@@ -119,6 +123,8 @@ def commit_doc_with_decisions(config, sections, pages_paragraphs, manual_decisio
                     current_document_id+1)
             if not corrected_date:
                 section.guess_date()
+            if not corrected_pertinence:
+                section.pertinence = is_pertinent(section, config)
             section.join_to_list(sections)
             # Operate on a copy, so we will ignore additional metas that will
             # be added downstream.
@@ -266,3 +272,5 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
     for section in sections:
         for row in section.row_strings():
             output_stream.write(row+'\n')
+
+    return sections

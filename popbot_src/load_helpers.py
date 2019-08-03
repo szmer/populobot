@@ -20,12 +20,14 @@ meta_signs = [ # characteristic elements for a meta section
         ]
 
 # Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
-heading_signs_1ord = ([ 
+resolution_titles = [re.compile(s) for s in ['Artyk', 'Postanowien', 'Uchwał[ay]', 'Deklarac', 'Laudu?m?a?', 'Konfederacy?j?', 'Instrukcy?j?[ae]', 'Instructio', 'Kwit\\s', 'Pokwitowan']]
+other_titles = [re.compile(s) for s in ['Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'App?robac[yj]a', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Popis', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Articuli', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac']]
+heading_signs_1ord = ( 
     # square brackets used to number sections in editions
-    re.compile('^\\[.*\\]')]
+    [re.compile('^\\[.*\\]')]
     +
     # titles - each of those will count as one occurence of a sign
-    [re.compile(s) for s in ['Artyk', 'Uchwał[ay]', 'Deklarac', 'Postanowien', 'Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'Laudu?m?a?', 'Instrukcy?j?[ae]', 'Instructio', 'App?robac[yj]a', 'Konfederacy?j?', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Popis', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Articuli', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Kwit\\s']])
+    resolution_titles + other_titles)
 heading_signs_2ord = ([
     re.compile('\\d+'),
     # numbers put in words
@@ -85,18 +87,18 @@ def is_meta_fragment(fragment, config):
     return False
 
 # Headings detection.
-def heading_score(section, config, verbose=False):
-    if len(section) < 15 or len(section) > config['max_heading_len']:
+def heading_score(paragraph, config, verbose=False):
+    if len(paragraph) < 15 or len(paragraph) > config['max_heading_len']:
         return -1.5
 
     # Do some possible cleanup.
-    section = section.replace('-', '')
+    paragraph = paragraph.replace('-', '')
 
-    signs_1ord = [s.search(section) for s in heading_signs_1ord]
+    signs_1ord = [s.search(paragraph) for s in heading_signs_1ord]
     signs_1ord_count = len([s for s in signs_1ord if s])
     if verbose:
         print('+{:.1f} from first-order signs'.format(signs_1ord_count))
-    signs_2ord = [s.search(section) for s in heading_signs_2ord]
+    signs_2ord = [s.search(paragraph) for s in heading_signs_2ord]
     signs_2ord_count = len([s for s in signs_2ord if s])
     if verbose:
         print('+{:.1f} from second-order signs'.format(signs_2ord_count))
@@ -104,40 +106,41 @@ def heading_score(section, config, verbose=False):
         signs_2ord_count -= 1.5
         if verbose:
             print('-1.5 from no first-order signs')
-    elif len([s.search(section) for s in heading_signs_1ord[:25]]):
+    elif len([s.search(paragraph) for s in heading_signs_1ord[:25]]):
         signs_2ord_count -= 1.0
         if verbose:
             print('-1.0 from no first-order signs in the first 25 characters')
     signs_count = signs_1ord_count + signs_2ord_count
-    antisigns = [s.search(section) for s in heading_antisigns]
+    antisigns = [s.search(paragraph) for s in heading_antisigns]
     antisigns_count = len([s for s in antisigns if s]) * 0.6
     if verbose:
         print('-{:.1f} from anti-signs {}'.format(antisigns_count, [s.group(0) for s in antisigns if s]))
     # If the first letter is not uppercase, it's a strong signal against.
     try:
-        first_letter = re.search('[^\\W\\d_]', section).group(0)
+        first_letter = re.search('[^\\W\\d_]', paragraph).group(0)
         if first_letter.lower() == first_letter:
             if verbose:
                 print('-1.0 lowercase')
             antisigns_count += 1
-    # Penalize also no-letter sections if such are found.
+    # Penalize also no-letter paragraphs if such are found.
     except AttributeError:
         antisigns_count += 1
     signs_count -= antisigns_count
-###    print(section, signs_count, 'signs')
-    # To be positive, the signs count must be more than a factor dependent on section length
+###    print(paragraph, signs_count, 'signs')
+    # To be positive, the signs count must be more than a factor dependent on paragraph length
     if verbose:
-        print('-{:.1f} from section length'.format((len(section) / 70)))
-    return signs_count - (len(section) / 70)
+        print('-{:.1f} from paragraph length'.format((len(paragraph) / 70)))
+    return signs_count - (len(paragraph) / 70)
 
-def doc_beginning_score(section, config):
+myrady = re.compile('[^\\w]{0,4}my.? r[au]d', flags=re.IGNORECASE)
+def doc_beginning_score(paragraph, config):
     signs_count = -0.5
-    sign_1ord = re.match('[^\\w]{0,4}my.? r[au]d', section, flags=re.IGNORECASE)
+    sign_1ord = myrady.match(paragraph)
     signs_2ord = ['dygnitarze', 'urzędnic', 'rycerstw', 'obywatel', 'panow', 'wszyst', 'wszytk', 'koronn', 'świec', 'duchown', 'ziem']
-    if sign_1ord is not None or (len(section) > 0 and section[0].lower() != section[0]):
+    if sign_1ord is not None or (len(paragraph) > 0 and paragraph[0].lower() != paragraph[0]):
         signs_count += 0.3
         for sign in signs_2ord:
-            if section.lower().find(sign):
+            if paragraph.lower().find(sign):
                 signs_count += 0.3 / len(signs_2ord)
     return signs_count
 
@@ -259,3 +262,19 @@ def join_linebreaks(text):
     return joined_text
 
 doctest.testmod()
+
+def is_pertinent(section, config):
+    """Assess whether the Section class object is research-pertinent (ie, a resolution of an assembly)."""
+    # Consider first actual paragraphs.
+    if len(section.pages_paragraphs) <= 1:
+        return False # no-content sections are nonpertinent
+    if myrady.match(section.pages_paragraphs[1][1]) is not None:
+        return True
+    # A second chance if there is some lower-hierarchy heading as the first paragraph.
+    if len(section.pages_paragraphs) > 2 and myrady.match(section.pages_paragraphs[2][1]) is not None:
+        return True
+    # Consider the title.
+    signs_pert_titles = [s.search(section.title()) for s in resolution_titles]
+    if len([s for s in signs_pert_titles if s is not None]) > 0:
+        return True
+    return False
