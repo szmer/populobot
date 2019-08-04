@@ -20,8 +20,8 @@ meta_signs = [ # characteristic elements for a meta section
         ]
 
 # Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
-resolution_titles = [re.compile(s) for s in ['Artyk', 'Postanowien', 'Uchwał[ay]', 'Deklarac', 'Laudu?m?a?', 'Konfederacy?j?', 'Instrukcy?j?[ae]', 'Instructio', 'Kwit\\s', 'Pokwitowan']]
-other_titles = [re.compile(s) for s in ['Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'App?robac[yj]a', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Popis', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Articuli', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac']]
+resolution_titles = [re.compile(s) for s in ['Artyk', 'Articuli', 'Postanowien', 'Uchwał[ay]', 'Deklarac', 'Laudu?m?a?', 'Konfederacy?j?', 'Instrukcy?j?[ae]', 'Instructio', 'Kwit\\s', 'Pokwitowan']]
+other_titles = [re.compile(s) for s in ['Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'App?robac[yj]a', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Popis', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac']]
 heading_signs_1ord = ( 
     # square brackets used to number sections in editions
     [re.compile('^\\[.*\\]')]
