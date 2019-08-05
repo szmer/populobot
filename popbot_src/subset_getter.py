@@ -1,10 +1,12 @@
 from popbot_src.indexing_common import load_document_sections
+from popbot_src.indexing_helpers import apply_decisions1, read_config_file, read_manual_decisions
 
 def date_sortable_form(date):
     "This can be supplied as a 'key' to a sorting function"
     d, m, y = tuple([int(f) for f in date.split('-')])
     return y * 1000 + m * 100 + d
 
+# TODO
 standard_date_thresholds = []
 
 def make_subset_generator(file_list_path, date_thresholds=standard_date_thresholds):
@@ -15,8 +17,15 @@ def make_subset_generator(file_list_path, date_thresholds=standard_date_threshol
 
     # Load sections.
     all_sections = []
-    for filename in fnames:
-        all_sections += load_document_sections(filename) # TODO manual decisions
+    for file_row in fnames:
+        file_fields = file_row.split()
+        filename = file_fields[0]
+        sections = load_document_sections(filename)
+        if len(file_fields) > 1:
+            manual_decisions = read_manual_decisions(file_fields[1])
+            config = read_config_file(file_fields[2])
+            sections = apply_decisions1(sections, manual_decisions, config)
+        all_sections += sections
 
     # Index sections.
     section_index = dict()
