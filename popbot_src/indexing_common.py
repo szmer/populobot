@@ -10,6 +10,7 @@ from popbot_src.section import Section
 from popbot_src.load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match, is_pertinent
 
 def load_indexed(csv_file):
+    "Load all sections from a file stream."
     edition_sections = []
     csv_reader = csv.reader(csv_file)
     for row in csv_reader:
@@ -22,6 +23,7 @@ def load_indexed(csv_file):
     return edition_sections 
 
 def load_document_sections(csv_path, print_titles=False):
+    "Load only document sections from the given path."
     with open(csv_path) as csv_file:
         edition_sections = load_indexed(csv_file)
     document_sections = []
