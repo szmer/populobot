@@ -204,7 +204,12 @@ class Section():
         #self.scan_page #= #row[3]
         #self.book_page #= #row[4]
         self.section_type = row[4]
-        self.date = row[5]
+        try:
+            # They're written as tuples to strings (in theory could be eval'ed).
+            self.date = tuple([int(f.strip()) for f in row[5][1:-1].split(',')])
+            #self.date = tuple([int(f) for f in row[5].split('-')])
+        except:
+            self.date = False
         self.palatinate = row[6]
         self.convent_location = row[7]
         self.created_location = row[8]

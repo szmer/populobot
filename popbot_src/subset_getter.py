@@ -3,16 +3,19 @@ from popbot_src.indexing_helpers import apply_decisions1, read_config_file, read
 
 def date_sortable_form(date):
     "This can be supplied as a 'key' to a sorting function"
-    d, m, y = tuple([int(f) for f in date.split('-')])
-    return y * 1000 + m * 100 + d
+    d, m, y = tuple(date)
+    return int(y) * 1000 + int(m) * 100 + int(d)
 
 # TODO
-standard_date_thresholds = []
+standard_date_ranges = [
+# Reigns.
+('1-4-1548', '7-7-1572'), ('8-7-1572',  '1-5-1575'), ('2-5-1575', '12-12-1586'), ('13-12-1586',  '30-4-1632'), ('1-5-1632', '20-4-1648'), ('21-4-1648',  '16-9-1668'), ('17-9-1668', '10-11-1673'), ('11-11-1673', '17-6-1696'),
+# Additional ranges.
+('12-12-1586', '26-2-1609'), ('27-2-1609', '30-4-1632'), ('20-4-1648', '18-7-1656'), ('19-7-1656', '16-9-1668'), ('11-11-1673', '12-9-1683'), ('13-9-1683', '17-6-1696'),
+]
 
-def make_subset_generator(file_list_path, date_thresholds=standard_date_thresholds):
-    fnames = []
+def make_subset_index(file_list_path, date_ranges=standard_date_ranges):
     with open(file_list_path) as list_file:
-        global fnames
         fnames = list_file.readlines()
 
     # Load sections.
@@ -35,33 +38,29 @@ def make_subset_generator(file_list_path, date_thresholds=standard_date_threshol
     for section in all_sections:
         if section.date:
             all_dates.append(section.date) # avoid False which we can't sort
-        attrnames = ['book_title', 'convent_location', 'palatinate', 'date']
-        for attr in attrnames:
-            index = '{}//{}'.format(attr, getattr(section, attr))
-            if getattr(section, attr) in section_index:
-                if attr == 'date':
-                    section_date_index[index].append(section)
-                else:
-                    section_index[index].append(section)
+            if section.date in section_date_index:
+                section_date_index[section.date].append(section)
             else:
-                if attr == 'date':
-                    section_date_index[index] = [ section ]
-                else:
-                    section_index[index] = [ section ]
+                section_date_index[section.date] = [ section ]
+        attrnames = ['book_title', 'convent_location', 'palatinate']
+        for attr in attrnames:
+            index = '{}__{}'.format(attr, getattr(section, attr))
+            if getattr(section, attr) in section_index:
+                section_index[index].append(section)
+            else:
+                section_index[index] = [ section ]
 
     # Make date ranges.
     all_dates.sort(key=date_sortable_form)
-    threshold_n = 0
-    daterange_index = 'daterange//' + date_thresholds[threshold_n]
-    section_index[daterange_index] = []
+    sortable_ranges = [(date_sortable_form(dr[0].split('-')),
+        date_sortable_form(dr[1].split('-'))) for dr in date_ranges]
     for date in all_dates:
-        # If the threshold passed.
-        if (threshold_n + 1 < len(date_thresholds)
-                and date_sortable_form(date) >= date_sortable_form(date_thresholds[threshold_n+1])):
-            threshold_n += 1
-            daterange_index = 'daterange//' + date_thresholds[threshold_n]
-            section_index[daterange_index] = []
-        section_index[daterange_index] += section_date_index[date]
+        sortable_date = date_sortable_form(date)
+        for range_n, date_range in enumerate(sortable_ranges):
+            if sortable_date >= date_range[0] and sortable_date <= date_range[1]:
+                daterange_index = 'daterange__' + '_'.join(list(date_ranges[range_n]))
+                if not daterange_index in section_index:
+                    section_index[daterange_index] = []
+                section_index[daterange_index] += section_date_index[date]
 
-    for (index, sections) in section_index.items():
-        yield index, sections
+    return section_index.items()

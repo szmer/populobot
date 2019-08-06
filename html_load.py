@@ -37,8 +37,10 @@ with open(config['html_file_path']) as html_file:
             if html_par.name == 'ol' and len(html_par.findAll('li')) == 1:
                 if current_pages_paragraphs:
                     # Commit the previous document.
-                    Section.new(config, 'document', current_pages_paragraphs,
-                        document_id=current_document_id).join_to_list(sections)
+                    new_section = Section.new(config, 'document', current_pages_paragraphs,
+                        document_id=current_document_id)
+                    new_section.guess_date()
+                    new_section.join_to_list(sections)
                     current_document_id += 1
                 current_pages_paragraphs = [(-1, html_par.text.strip())]
             # A meta section.
@@ -66,8 +68,10 @@ with open(config['html_file_path']) as html_file:
                         continue
                     if current_pages_paragraphs:
                         # Commit the previous document.
-                        Section.new(config, 'document', current_pages_paragraphs,
-                            document_id=current_document_id).join_to_list(sections)
+                        new_section = Section.new(config, 'document', current_pages_paragraphs,
+                            document_id=current_document_id)
+                        new_section.guess_date()
+                        new_section.join_to_list(sections)
                         current_document_id += 1
                     current_pages_paragraphs = [(-1, html_par.text.strip())]
                 # Basically skip everything until we have a document title.
@@ -93,8 +97,10 @@ with open(config['html_file_path']) as html_file:
                 if re.search('^\\d+\\.', html_par.text.strip()):
                     if current_pages_paragraphs:
                         # Commit the previous document.
-                        Section.new(config, 'document', current_pages_paragraphs,
-                            document_id=current_document_id).join_to_list(sections)
+                        new_section = Section.new(config, 'document', current_pages_paragraphs,
+                            document_id=current_document_id)
+                        new_section.guess_date()
+                        new_section.join_to_list(sections)
                         current_document_id += 1
                     current_pages_paragraphs = [(-1, html_par.text.strip())]
                 # A meta section.
@@ -105,8 +111,10 @@ with open(config['html_file_path']) as html_file:
 
 # If something remains in the document buffer, commit it.
 if len(current_pages_paragraphs) > 0:
-    Section.new(config, 'document', current_pages_paragraphs,
-        document_id=current_document_id).join_to_list(sections)
+    new_section = Section.new(config, 'document', current_pages_paragraphs,
+        document_id=current_document_id)
+    new_section.guess_date()
+    new_section.join_to_list(sections)
 
 # Print collected sections as csv rows.
 for section in sections:
