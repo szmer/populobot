@@ -26,7 +26,8 @@ class ParsedToken():
         return self
 
     def __repr__(self):
-        repr_str = '{}:{}:{}'.format(self.form, self.lemma, self.interp)
+        repr_str = '{}:{}:{}'.format(self.form, self.lemma,
+                ':'.join(self.interp) if isinstance(self.interp, list) else self.interp)
         if self.unknown_form:
             repr_str = '??_' + repr_str
         elif self.corrected:

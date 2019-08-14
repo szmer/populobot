@@ -4,7 +4,7 @@ import re
 from bs4 import BeautifulSoup, Tag
 
 from popbot_src.section import Section
-from popbot_src.load_helpers import is_meta_fragment
+from popbot_src.load_helpers import is_meta_fragment, heading_score
 
 argparser = argparse.ArgumentParser(description='Load and index an edition of sejmik resolutions from a HTML doc exported from LibreOffice writer.')
 argparser.add_argument('config_file_path')
@@ -62,8 +62,8 @@ with open(config['html_file_path']) as html_file:
                 elif len(html_par.findAll('i')) > 0:
                     # the second term should exclude the table of contents
                     if ('Wstęp' in html_par.text.strip()
-                            or html_par.text.count('.') > 10
-                            or not re.search('^\\d+\\.', html_par.text.strip())):
+                            or html_par.text.count('.') > 10 # ignore contents section
+                            or not re.search('\\d+', html_par.text.strip())):
                         Section.new(config, 'meta', [(-1, html_par.text.strip())]).join_to_list(sections)
                         continue
                     if current_pages_paragraphs:
@@ -75,7 +75,38 @@ with open(config['html_file_path']) as html_file:
                         current_document_id += 1
                     current_pages_paragraphs = [(-1, html_par.text.strip())]
                 # Basically skip everything until we have a document title.
-                elif len(current_pages_paragraphs) > 1:
+                elif len(current_pages_paragraphs) > 0:
+                    current_pages_paragraphs.append((-1, html_par.text.strip()))
+                else:
+                    Section.new(config, 'meta', [(-1, html_par.text.strip())]).join_to_list(sections)
+        elif config['structure'] == 'chelmskie_doc':
+            if not isinstance(html_par, Tag):
+                continue
+            elif html_par.name == 'p' or html_par.name == 'ol':
+                # A meta section.
+                if len(html_par.findAll('font')) > 0:
+                    Section.new(config, 'meta', [(-1, html_par.text.strip())]).join_to_list(sections)
+                # A heading.
+                elif ((('align' in html_par.attrs and html_par.attrs['align'] == 'center')
+                    or html_par.name == 'ol')
+                        and ((len(html_par.findAll('b')) == 1 and html_par.find('b').text.strip() == html_par.text.strip())
+                            or (len(html_par.findAll('i')) == 1 and html_par.find('i').text.strip() == html_par.text.strip()))):
+                    # the second term should exclude the table of contents
+                    if ('Wstęp' in html_par.text.strip()
+                            or html_par.text.count('.') > 10 # ignore contents section
+                            or heading_score(html_par.text.strip(), config) < 0.6):
+                        Section.new(config, 'meta', [(-1, html_par.text.strip())]).join_to_list(sections)
+                        continue
+                    if current_pages_paragraphs:
+                        # Commit the previous document.
+                        new_section = Section.new(config, 'document', current_pages_paragraphs,
+                            document_id=current_document_id)
+                        new_section.guess_date()
+                        new_section.join_to_list(sections)
+                        current_document_id += 1
+                    current_pages_paragraphs = [(-1, html_par.text.strip())]
+                # Basically skip everything until we have a document title.
+                elif len(current_pages_paragraphs) > 0:
                     current_pages_paragraphs.append((-1, html_par.text.strip()))
                 else:
                     Section.new(config, 'meta', [(-1, html_par.text.strip())]).join_to_list(sections)
