@@ -28,10 +28,13 @@ def make_subset_index(file_list_path, date_ranges=standard_date_ranges):
             manual_decisions = read_manual_decisions(file_fields[1])
             config = read_config_file(file_fields[2])
             sections = apply_decisions1(sections, manual_decisions, config)
+        # Leave out non-document and non-pertinent sections.
+        sections = [s for s in sections if s.section_type == 'document' and s.pertinence]
         all_sections += sections
 
     # Index sections.
     section_index = dict()
+    section_index['ALL'] = all_sections
     # we don't want to give single date subsets, they'll be grouped in ranges
     section_date_index = dict()
     all_dates = []
@@ -45,7 +48,7 @@ def make_subset_index(file_list_path, date_ranges=standard_date_ranges):
         attrnames = ['book_title', 'convent_location', 'palatinate']
         for attr in attrnames:
             index = '{}__{}'.format(attr, getattr(section, attr))
-            if getattr(section, attr) in section_index:
+            if index in section_index:
                 section_index[index].append(section)
             else:
                 section_index[index] = [ section ]

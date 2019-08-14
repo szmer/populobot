@@ -5,7 +5,7 @@ from popbot_src.indexing_common import load_edition
 
 argparser = argparse.ArgumentParser(description='Load and index an edition of sejmik resolutions from scanned pages.')
 argparser.add_argument('config_file_path')
-argparser.add_argument('--manual_decisions_file', '-m')
+argparser.add_argument('--manual_decisions_file', '-m', default=False)
 
 args = argparser.parse_args()
 

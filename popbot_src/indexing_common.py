@@ -1,4 +1,5 @@
 import csv, os, re, sys
+from collections import defaultdict
 
 csv.field_size_limit(100000000)
 
@@ -38,7 +39,7 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
     config = read_config_file(config_file_path)
 
     # Load the manual decisions.
-    manual_decisions = dict()
+    manual_decisions = defaultdict(list)
     if manual_decisions_file:
         manual_decisions = read_manual_decisions(manual_decisions_file)
 

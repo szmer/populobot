@@ -33,4 +33,6 @@ class ParsedToken():
             repr_str = '!!_' + repr_str
         if self.proper_name:
             repr_str = 'PN_' + repr_str
+        if self.latin:
+            repr_str = 'LA_' + repr_str
         return repr_str
