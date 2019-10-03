@@ -268,6 +268,8 @@ def is_pertinent(section, config):
     # Consider first actual paragraphs.
     if len(section.pages_paragraphs) <= 1:
         return False # no-content sections are nonpertinent
+    if 'sędziowie' in section.pages_paragraphs[1][1]: # judicial lauda from Ruthenia
+        return False
     if myrady.match(section.pages_paragraphs[1][1]) is not None:
         return True
     # A second chance if there is some lower-hierarchy heading as the first paragraph.

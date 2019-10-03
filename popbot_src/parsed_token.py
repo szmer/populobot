@@ -14,11 +14,11 @@ class ParsedToken():
     @classmethod
     def from_str(cls, token_str):
         semantic_fields = token_str.split('_')
-        morpho_fields = '_'.join([f for f in semantic_fields if not f in ['PN', '??']]).split(':')
+        morpho_fields = '_'.join([f for f in semantic_fields if not f in ['PN', '??', '!!', 'LA']]).split(':')
         self = cls(morpho_fields[0], morpho_fields[1],  ':'.join(morpho_fields[2:]))
         self.proper_name = 'PN' in semantic_fields
         self.unknown_form = '??' in semantic_fields
-        self.latin = 'LAT' in semantic_fields
+        self.latin = 'LA' in semantic_fields
         self.corrected = '!!' in semantic_fields
         self.form = morpho_fields[0]
         self.lemma = morpho_fields[1]

@@ -54,8 +54,8 @@ with open(args.dictionary_file) as dict_file:
 # Set up Enchant spellchecking.
 #
 spellchecker = enchant.DictWithPWL(tag='pl_PL', pwl=args.wordlist)
-for form, tags in tags_dictionary.items():
-    spellchecker.add(form)
+#for form, tags in tags_dictionary.items():
+#    spellchecker.add(form)
 
 #
 # Load the section and go through them with corrections. 
