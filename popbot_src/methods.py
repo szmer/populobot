@@ -9,7 +9,7 @@ from collections import defaultdict
 def zero():
     return 0
 
-def basic_stats(sections):
+def basic_stats(sections, method_options):
     "Returns sorted tuples reflecting the frequency of word forms."
     full_tokens = []
     for section in sections:
@@ -35,7 +35,7 @@ def basic_stats(sections):
             stats['latin_tokens'] += 1
     return list(stats.items())
 
-def form_frequency(sections):
+def form_frequency(sections, method_options):
     "Returns sorted tuples reflecting the frequency of word forms."
     full_tokens = []
     for section in sections:
@@ -53,7 +53,7 @@ def form_frequency(sections):
         result[row_n] = row + (row[1]/fd.N(),)
     return result
 
-def lemma_frequency(sections):
+def lemma_frequency(sections, method_options):
     "Returns sorted tuples reflecting the frequency of word forms."
     full_tokens = []
     for section in sections:
@@ -61,7 +61,9 @@ def lemma_frequency(sections):
             tokens = list(re.split('\\s', par))
             for t_str in tokens:
                 try: # can fail if something isn't a readable token
-                    full_tokens.append(ParsedToken.from_str(t_str).lemma)
+                    token = ParsedToken.from_str(t_str)
+                    if not method_options['omit_suspicious_interps'] or not 'brev' in token.interp:
+                        full_tokens.append(token.lemma)
                 except:
                     pass
     fd = FreqDist(full_tokens)
@@ -71,7 +73,7 @@ def lemma_frequency(sections):
         result[row_n] = row + (row[1]/fd.N(),)
     return result
 
-def form_bigrams(sections):
+def form_bigrams(sections, method_options):
     full_tokens = []
     for section in sections:
         for pg, par in section.pages_paragraphs:
@@ -93,7 +95,7 @@ def form_bigrams(sections):
     result.sort(key=lambda x: x[1], reverse=True)
     return result
 
-def form_trigrams(sections):
+def form_trigrams(sections, method_options):
     full_tokens = []
     for section in sections:
         for pg, par in section.pages_paragraphs:
@@ -114,7 +116,7 @@ def form_trigrams(sections):
     result.sort(key=lambda x: x[1], reverse=True)
     return result
 
-def lemma_bigrams(sections):
+def lemma_bigrams(sections, method_options):
     full_tokens = []
     for section in sections:
         for pg, par in section.pages_paragraphs:
@@ -135,7 +137,7 @@ def lemma_bigrams(sections):
     result.sort(key=lambda x: x[1], reverse=True)
     return result
 
-def lemma_trigrams(sections):
+def lemma_trigrams(sections, method_options):
     full_tokens = []
     for section in sections:
         for pg, par in section.pages_paragraphs:
@@ -156,9 +158,9 @@ def lemma_trigrams(sections):
     result.sort(key=lambda x: x[1], reverse=True)
     return result
 
-def apply_method(method_name, method_function, subset_index):
-    makedirs('results/'+method_name, exist_ok=True)
+def apply_method(experiment_name, method_name, method_function, subset_index, method_options):
+    makedirs('results/{}/{}'.format(experiment_name, method_name), exist_ok=True)
     for (subset_name, sections) in subset_index:
-        with open('results/{}/{}.csv'.format(method_name, subset_name), 'w+') as result_file:
+        with open('results/{}/{}/{}.csv'.format(experiment_name, method_name, subset_name), 'w+') as result_file:
             writer = csv.writer(result_file, delimiter='\t')
-            writer.writerows(method_function(sections))
+            writer.writerows(method_function(sections, method_options))
