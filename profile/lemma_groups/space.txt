@@ -1,0 +1,11 @@
+dom
+granica
+kościół
+łan
+miasteczko
+miasto
+miejsce
+obóz
+powiat
+wieś
+zamek
