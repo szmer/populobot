@@ -15,6 +15,7 @@ standard_date_ranges = [
 ]
 
 def make_subset_index(file_list_path, date_ranges=standard_date_ranges):
+    """Return a list of tuples: subset name, list of subset sections"""
     with open(file_list_path) as list_file:
         fnames = list_file.readlines()
 
