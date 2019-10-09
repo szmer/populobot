@@ -6,15 +6,7 @@ def date_sortable_form(date):
     d, m, y = tuple(date)
     return int(y) * 1000 + int(m) * 100 + int(d)
 
-# TODO
-standard_date_ranges = [
-# Reigns.
-('1-4-1548', '7-7-1572'), ('8-7-1572',  '1-5-1575'), ('2-5-1575', '12-12-1586'), ('13-12-1586',  '30-4-1632'), ('1-5-1632', '20-4-1648'), ('21-4-1648',  '16-9-1668'), ('17-9-1668', '10-11-1673'), ('11-11-1673', '17-6-1696'),
-# Additional ranges.
-('12-12-1586', '26-2-1609'), ('27-2-1609', '30-4-1632'), ('20-4-1648', '18-7-1656'), ('19-7-1656', '16-9-1668'), ('11-11-1673', '12-9-1683'), ('13-9-1683', '17-6-1696'),
-]
-
-def make_subset_index(file_list_path, date_ranges=standard_date_ranges):
+def make_subset_index(file_list_path, date_ranges=[]):
     """Return a list of tuples: subset name, list of subset sections"""
     with open(file_list_path) as list_file:
         fnames = list_file.readlines()

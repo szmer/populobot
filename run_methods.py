@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import yaml
 
 from popbot_src.methods import apply_method, basic_stats, form_frequency, lemma_frequency, form_bigrams, form_trigrams, lemma_bigrams, lemma_trigrams
 from popbot_src.meta_methods import keyword_distribution
@@ -13,7 +14,11 @@ argparser.add_argument('--skip_basic', action='store_true', help='Omit all the b
 argparser.add_argument('--skip_meta', action='store_true', help='Omit all the meta methods.')
 args = argparser.parse_args()
 
-subsets = make_subset_index(args.file_list_path) # of (name, sections)
+# load date ranges from the profile:
+with open('profile/date_ranges.yaml') as dranges_file:
+    date_ranges = yaml.load(dranges_file.read(), Loader=yaml.FullLoader)
+
+subsets = make_subset_index(args.file_list_path, date_ranges=date_ranges) # of (name, sections)
 
 if args.experiment_name:
     experiment_name = args.experiment_name

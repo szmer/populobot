@@ -43,7 +43,10 @@ def keyword_distribution(experiment_name, subset_names, method_options):
                 print('#'*10, file=subset_file)
                 print('#'*10, file=subset_file)
                 print('###{}'.format(group_entry[0]), file=subset_file)
-                for lemmas in group_entry[1]:
+                groups_sorted = sorted(group_entry[1],
+                                       key=lambda lemmas: sum([l_entry[1] for l_entry in lemmas]),
+                                       reverse=True)
+                for lemmas in groups_sorted:
                     freq_sum = sum([l_entry[1] for l_entry in lemmas])
                     print('##{} etc. - {}'.format(lemmas[0][0], freq_sum), file=subset_file)
                     for lemma_entry in lemmas:
