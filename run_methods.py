@@ -16,7 +16,7 @@ args = argparser.parse_args()
 
 # load date ranges from the profile:
 with open('profile/date_ranges.yaml') as dranges_file:
-    date_ranges = yaml.load(dranges_file.read(), Loader=yaml.FullLoader)
+    date_ranges = yaml.load(dranges_file.read(), Loader=yaml.FullLoader)['ranges']
 
 subsets = make_subset_index(args.file_list_path, date_ranges=date_ranges) # of (name, sections)
 
