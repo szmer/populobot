@@ -17,8 +17,11 @@ args = argparser.parse_args()
 # load date ranges from the profile:
 with open('profile/date_ranges.yaml') as dranges_file:
     date_ranges = yaml.load(dranges_file.read(), Loader=yaml.FullLoader)['ranges']
+with open('profile/indexed_attributes.yaml') as attrs_file:
+    indexed_attrs = yaml.load(attrs_file.read(), Loader=yaml.FullLoader)['attributes']
 
-subsets = make_subset_index(args.file_list_path, date_ranges=date_ranges) # of (name, sections)
+# a list of (name, sections):
+subsets = make_subset_index(args.file_list_path, indexed_attrs, date_ranges=date_ranges)
 
 if args.experiment_name:
     experiment_name = args.experiment_name
@@ -26,7 +29,7 @@ else:
     experiment_name = datetime.datetime.now().isoformat()
 
 method_options = {'omit_suspicious_interps': args.omit_suspicious_interps,
-                  'profile_dir': 'profile'}
+                  'profile_dir': 'profile' }
 
 if not args.skip_basic:
     for name, fun in [

@@ -1,5 +1,10 @@
-import csv, io
+import csv
+import datetime
+import io
 from popbot_src.load_helpers import extract_dates, fuzzy_match
+
+def tuple_to_datetime(date_tuple):
+    return datetime.datetime(date_tuple[2], date_tuple[1], date_tuple[0])
 
 # Section class template.
 class Section():
@@ -14,7 +19,8 @@ class Section():
                 self.inbook_document_id,
                 scan_page,
                 self.section_type,
-                self.date,
+                # write it as a tuple from the datetime object
+                (self.date.day, self.date.month, self.date.year),
                 self.palatinate,
                 self.convent_location,
                 self.created_location,
@@ -26,6 +32,8 @@ class Section():
         return rows
 
     def collapsed_text(self):
+        """Return all paragraphs of the section as one string. This excludes the title (first
+        paragraph)"""
         return '\n\n'.join([par for (pg, par) in self.pages_paragraphs[1:]])
 
     def title(self):
@@ -154,13 +162,13 @@ class Section():
         title_dates = extract_dates(self.pages_paragraphs[0][1])
         sorted_dates = sorted([(d, m, y) for (d, m, y) in title_dates if y <= 1795], key=lambda x: x[2])
         if len(sorted_dates) > 0:
-            self.date = sorted_dates[0]
+            self.date = tuple_to_datetime(sorted_dates[0])
             return self.date
         # If the title yields nothing, try the content - the first date that appears in the document.
         content_dates = extract_dates(self.collapsed_text())
         sorted_dates = [(d, m, y) for (d, m, y) in content_dates if y <= 1795]
         if len(sorted_dates) > 0:
-            self.date = sorted_dates[0]
+            self.date = tuple_to_datetime(sorted_dates[0])
             return self.date
         return False
 
@@ -206,8 +214,8 @@ class Section():
         self.section_type = row[4]
         try:
             # They're written as tuples to strings (in theory could be eval'ed).
-            self.date = tuple([int(f.strip()) for f in row[5][1:-1].split(',')])
-            #self.date = tuple([int(f) for f in row[5].split('-')])
+            date_tuple = tuple([int(f.strip()) for f in row[5][1:-1].split(',')])
+            self.date = tuple_to_datetime(date_tuple)
         except:
             self.date = False
         self.palatinate = row[6]

@@ -22,6 +22,7 @@ class SplitSectionDecision():
         self.following_fragm = following_fragm
         self.new_section_type = new_section_type
 
+# NOTE these are stored as tuples, to be converted to datetimes if put into Section object
 class DateDecision():
     def __init__(self, date, from_title, pagenum):
         self.decision_type = 'date'

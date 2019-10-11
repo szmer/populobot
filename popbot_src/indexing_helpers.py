@@ -4,7 +4,7 @@ import yaml
 from copy import copy
 from itertools import chain
 
-from popbot_src.section import Section
+from popbot_src.section import Section, tuple_to_datetime
 from popbot_src.load_helpers import fuzzy_match, is_pertinent
 
 def read_config_file(config_file_path):
@@ -43,7 +43,7 @@ def apply_decisions1(sections, manual_decisions, config):
                 meta_inserts[-1] = tuple(meta_inserts[-1])
             # Date decisions.
             if decision.decision_type == 'date' and fuzzy_match(decision.from_title, pages_paragraphs[0][1]):
-                section.date = decision.date
+                section.date = tuple_to_datetime(decision.date)
             # Pertinence decisions.
             if decision.decision_type == 'pertinence' and fuzzy_match(decision.from_title, pages_paragraphs[0][1]):
                 section.pertinence = decision.pertinence_status
@@ -138,7 +138,7 @@ def commit_doc_with_decisions(config, sections, pages_paragraphs, manual_decisio
                 break
             # Date decisions.
             if decision.decision_type == 'date' and fuzzy_match(decision.from_title, pages_paragraphs[0][1]):
-                section.date = decision.date
+                section.date = tuple_to_datetime(decision.date)
                 corrected_date = True
             # Pertinence decisions.
             if decision.decision_type == 'pertinence' and fuzzy_match(decision.from_title, pages_paragraphs[0][1]):
