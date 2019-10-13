@@ -22,7 +22,7 @@ class TestSubsetGetter(unittest.TestCase):
                            ('palatinate__C', [Section.new(config3, 'document', [(1, 'ttl'), (1, 'ff')]),
                                               Section.new(config3, 'document', [(1, 'ttl'), (1, 'hh')]),
                                               Section.new(config3, 'document', [(1, 'ttl'), (1, 'ii')])])])
-        test_weightings = {'A': 3, 'B': 3, 'C': 3}
+        test_weightings = {'A': 3, 'B': 3, 'C': 3, 'D': 4}
         weighted_index = weight_index(test_index, ['palatinate', 'book_title'],
                                       'palatinate', test_weightings)
         # Weight_index puts correct indices.
@@ -31,6 +31,7 @@ class TestSubsetGetter(unittest.TestCase):
         self.assertIn('palatinate__B', indices)
         self.assertIn('palatinate__C', indices)
         self.assertIn('book_title__book', indices)
+        self.assertNotIn('palatinate__D', indices) # values not present should be skipped
         # Palatinate indices have correct scaled sizes.
         self.assertEqual(2, len(weighted_index['palatinate__A']))
         self.assertEqual(2, len(weighted_index['palatinate__B']))

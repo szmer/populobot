@@ -22,27 +22,33 @@ def section_indices(section, attrnames, date_ranges=[]):
 
 def weight_index(section_index, indexed_attrs, weighted_param, weighted_values, date_ranges=[]):
     weighted_section_index = dict()
-    weight_total = sum([weight for value, weight in weighted_values.items()])
     # Observed total string-lengths of all subcorpora.
-    observed_lengths = dict([(value, sum([len(section.collapsed_text()) for section
-                                          in section_index['{}__{}'.format(weighted_param, value)]]))
-                             for value in weighted_values])
+    observed_lengths = [] # to be converted to a dict
+    for value in weighted_values:
+        index = '{}__{}'.format(weighted_param, value)
+        if index in section_index:
+            observed_lengths.append((value, sum([len(section.collapsed_text()) for section
+                                          in section_index[index]])))
+    observed_lengths = dict(observed_lengths)
     observed_total = sum([len for value, len in observed_lengths.items()])
+    weight_total = sum([weight for value, weight in weighted_values.items()
+                        if value in observed_lengths])
 
     # Find the value for which we have the least text in relation to what is needed. It will
     # be used for scaling down the whole corpus to the weights.
     smallest_coverage = 100
-    for value, weight in weighted_values.items():
+    for value, observed_weight in observed_lengths.items():
         # Here we divide the proportions/weights by totals to have normalized proportion ratio,
         # which we will need to compute the scaled total.
-        coverage = ((observed_lengths[value]/observed_total) / (weight/weight_total))
+        coverage = ((observed_weight/observed_total) / (weighted_values[value]/weight_total))
         if coverage < smallest_coverage:
             smallest_coverage = coverage
     scaled_total = smallest_coverage * observed_total
 
     # Note that values without associated weights are ignored.
-    for value, weight in weighted_values.items():
+    for value, observed_weight in observed_lengths.items():
         value_index = '{}__{}'.format(weighted_param, value)
+        weight = weighted_values[value]
         length_quota = weight/weight_total * scaled_total
         acquired_length = 0
         # TODO guarantee seed consistence
