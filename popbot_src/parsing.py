@@ -102,7 +102,7 @@ def parse_with_concraft(concraft_model_path, input_path):
             decided_paths.append(str(fields[0:2]))
             if len(fields) != 11:
                 raise RuntimeError('Incorrect number of columns in Concraft output - not 11 -: {}'.format(line))
-            token = ParsedToken(fields[2], fields[3], fields[4])
+            token = ParsedToken(fields[2], fields[3], fields[4].split(':')) # split the interp into a list of tags
             sent_tokens.append(token)
         if len(line.strip()) == 0: # end of sentence
             sents.append(sent_tokens)

@@ -15,9 +15,11 @@ def section_indices(section, attrnames, date_ranges=[]):
     indices = []
     for attr in attrnames:
         indices.append('{}__{}'.format(attr, getattr(section, attr)))
-    for date_range in date_ranges:
-        if section.date >= date_range[0] and section.date < date_range[1]:
-            indices.append('date_range__' + '_'.join(list(date_range)))
+    # It's important that the date may be false.
+    if section.date:
+        for date_range in date_ranges:
+            if section.date >= date_range[0] and section.date < date_range[1]:
+                indices.append('date_range__' + '_'.join([d.isoformat() for d in date_range]))
     return indices
 
 def weight_index(section_index, indexed_attrs, weighted_param, weighted_values, date_ranges=[]):
@@ -97,8 +99,8 @@ def make_subset_index(file_list_path, indexed_attrs, date_ranges=[], subcorpus_w
             else:
                 section_index[index] = [ section ]
 
-    # Apply subcorpus weightings.
-    for weighted_param, weighted_values in subcorpus_weightings.items():
+    # Apply subcorpus weightings (from a list of param, dictionary tuples).
+    for weighted_param, weighted_values in subcorpus_weightings:
         section_index = weight_index(section_index, indexed_attrs, weighted_param, weighted_values)
 
     return section_index.items()

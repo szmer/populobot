@@ -5,7 +5,9 @@ class ParsedToken():
             proper_name=False, unknown_form=False, latin=False, corrected=False):
         self.form = form
         self.lemma = lemma
-        self.interp = interp # as string
+        if not isinstance(interp, list):
+            interp = interp.split(':')
+        self.interp = interp
         self.proper_name = proper_name
         self.unknown_form = unknown_form
         self.latin = latin
@@ -26,8 +28,7 @@ class ParsedToken():
         return self
 
     def __repr__(self):
-        repr_str = '{}:{}:{}'.format(self.form, self.lemma,
-                ':'.join(self.interp) if isinstance(self.interp, list) else self.interp)
+        repr_str = '{}:{}:{}'.format(self.form, self.lemma, ':'.join(self.interp))
         if self.unknown_form:
             repr_str = '??_' + repr_str
         elif self.corrected:
@@ -37,3 +38,6 @@ class ParsedToken():
         if self.latin:
             repr_str = 'LA_' + repr_str
         return repr_str
+
+    def interp_str(self):
+        return ':'.join(self.interp)

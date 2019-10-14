@@ -17,6 +17,10 @@ args = argparser.parse_args()
 # load date ranges from the profile:
 with open('profile/date_ranges.yaml') as dranges_file:
     date_ranges = yaml.load(dranges_file.read(), Loader=yaml.FullLoader)['ranges']
+for di, date_range in enumerate(date_ranges):
+    r1 = [int(e) for e in date_range[0].split('-')]
+    r2 = [int(e) for e in date_range[1].split('-')]
+    date_ranges[di] = [datetime.date(r1[2], r1[1], r1[0]), datetime.date(r2[2], r2[1], r2[0])]
 with open('profile/indexed_attributes.yaml') as attrs_file:
     indexed_attrs = yaml.load(attrs_file.read(), Loader=yaml.FullLoader)['attributes']
 

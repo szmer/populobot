@@ -4,7 +4,7 @@ import io
 from popbot_src.load_helpers import extract_dates, fuzzy_match
 
 def tuple_to_datetime(date_tuple):
-    return datetime.datetime(date_tuple[2], date_tuple[1], date_tuple[0])
+    return datetime.date(date_tuple[2], date_tuple[1], date_tuple[0])
 
 # Section class template.
 class Section():
