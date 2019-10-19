@@ -3,11 +3,6 @@ from random import shuffle
 from popbot_src.indexing_common import load_document_sections
 from popbot_src.indexing_helpers import apply_decisions1, read_config_file, read_manual_decisions
 
-def date_sortable_form(date):
-    "This can be supplied as a 'key' to a sorting function"
-    d, m, y = tuple(date)
-    return int(y) * 1000 + int(m) * 100 + int(d)
-
 def section_indices(section, attrnames, date_ranges=[]):
     """Return all indices under which the section should be filed. If date_ranges are provided (as
     datetime objects), the date attribute is compared against them and appropriate ranges are also
@@ -24,7 +19,11 @@ def section_indices(section, attrnames, date_ranges=[]):
 
 def weight_index(section_index, indexed_attrs, weighted_param, weighted_values, date_ranges=[]):
     weighted_section_index = dict()
+    weighted_section_index['ALL'] = []
     # Observed total string-lengths of all subcorpora.
+    potentially_weighted = list([index for index in section_index.keys() if index.startswith(weighted_param)])
+    if len(weighted_values.items()) != len(potentially_weighted):
+        raise RuntimeError('Some of the values not present in weightings: {}'.format(potentially_weighted))
     observed_lengths = [] # to be converted to a dict
     for value in weighted_values:
         index = '{}__{}'.format(weighted_param, value)
@@ -62,6 +61,7 @@ def weight_index(section_index, indexed_attrs, weighted_param, weighted_values, 
             section = section_index[value_index][section_n]
             indices = section_indices(section, indexed_attrs, date_ranges=date_ranges)
             acquired_length += len(section.collapsed_text())
+            weighted_section_index['ALL'].append(section)
             for index in indices:
                 if index in weighted_section_index:
                     weighted_section_index[index].append(section)
@@ -101,6 +101,7 @@ def make_subset_index(file_list_path, indexed_attrs, date_ranges=[], subcorpus_w
 
     # Apply subcorpus weightings (from a list of param, dictionary tuples).
     for weighted_param, weighted_values in subcorpus_weightings:
-        section_index = weight_index(section_index, indexed_attrs, weighted_param, weighted_values)
+        section_index = weight_index(section_index, indexed_attrs, weighted_param, weighted_values,
+                                     date_ranges=date_ranges)
 
     return section_index.items()

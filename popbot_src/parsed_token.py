@@ -1,5 +1,8 @@
 # The class for saving parsed tokens obtained by morpho.py.
 
+class NoneTokenError(Exception):
+    pass
+
 class ParsedToken():
     def __init__(self, form, lemma, interp,
             proper_name=False, unknown_form=False, latin=False, corrected=False):
@@ -15,6 +18,8 @@ class ParsedToken():
 
     @classmethod
     def from_str(cls, token_str):
+        if token_str.strip() == '':
+            raise NoneTokenError
         semantic_fields = token_str.split('_')
         morpho_fields = '_'.join([f for f in semantic_fields if not f in ['PN', '??', '!!', 'LA']]).split(':')
         self = cls(morpho_fields[0], morpho_fields[1],  ':'.join(morpho_fields[2:]))

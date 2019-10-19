@@ -1,7 +1,20 @@
+# 1 zł (złoty) = 30 gr (grosz) = 30*18 d (denar)
+# The weights below are in zł.
+#
+# Figures for the Crown of Poland: A. Filipczak-Kocur, Sejm zwyczajny z roku 1629: 116-117.
+# Figures for the Grand Duchy of Lithuania: J. Morzy, Kryzys demograficzny na Litwie i Białorusi: Tab. 2.
+# (but this is for 1650!)
 weights:
-   krakowskie: 20
-   ruskie: 25
-   kaliskie: 10
-   poznańskie: 10
-   inowrocławskie: 10
-   nowogródzkie: 10
+   # ruskie: ziemia lwowska 21,253 zł; przemyska 20,029 zł 15 gr; sanocka 6,741 zł 15 gr;
+   # chełmska 10,337 zł 10 gr; halicka 14,239 zł 15 gr
+   ruskie: 75599.92
+   # kaliskie: 18,950 zł; poznańskie 21,192 zł
+   kaliskie, poznańskie: 39782.0
+   # krakowskie: 32,558 zł; ziemia zatorska: 3,524 zł 15 gr
+   krakowskie: 36082.5
+   # nowogródzkie: powiat nowogródzki 19,317 zł; słonimski 5345.17 zł; wołkowyski 4789.67
+   nowogródzkie: 29451.84
+   # brzeskie: 3,556 zł; inowrocławskie: 2,664 zł
+   brzeskie, inowrocławskie: 6220.0
+   # ziemia dobrzyńska: 2059 zł 15 gr
+   ziemia dobrzyńska: 2059.5

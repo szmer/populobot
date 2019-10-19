@@ -3,7 +3,7 @@ import csv
 from os import makedirs
 from nltk.probability import FreqDist
 from nltk.collocations import BigramCollocationFinder, BigramAssocMeasures, TrigramCollocationFinder, TrigramAssocMeasures
-from popbot_src.parsed_token import ParsedToken
+from popbot_src.parsed_token import ParsedToken, NoneTokenError
 from collections import defaultdict
 
 def zero():
@@ -18,7 +18,7 @@ def basic_stats(sections, method_options):
             for t_str in tokens:
                 try: # can fail if something isn't a readable token
                     full_tokens.append(ParsedToken.from_str(t_str))
-                except:
+                except NoneTokenError:
                     pass
     # Collect statistics of token types.
     stats = defaultdict(zero)
@@ -45,7 +45,7 @@ def form_frequency(sections, method_options):
                 try: # can fail if something isn't a readable token
                     token = ParsedToken.from_str(t_str)
                     full_tokens.append('{}%{}%{}'.format(token.form, token.lemma, token.interp_str()))
-                except:
+                except NoneTokenError:
                     pass
     fd = FreqDist(full_tokens)
     # This contains (token, freq) tuples.
@@ -66,7 +66,7 @@ def lemma_frequency(sections, method_options):
                     token = ParsedToken.from_str(t_str)
                     if not method_options['omit_suspicious_interps'] or not 'brev' in token.interp:
                         full_tokens.append(token.lemma)
-                except:
+                except NoneTokenError:
                     pass
     fd = FreqDist(full_tokens)
     # This contains (token, freq) tuples.
@@ -84,11 +84,11 @@ def form_bigrams(sections, method_options):
                 try: # can fail if something isn't a readable token
                     token = ParsedToken.from_str(t_str)
                     full_tokens.append('{}%{}%{}'.format(token.form, token.lemma, token.interp_str()))
-                except:
+                except NoneTokenError:
                     pass
     coll_finder = BigramCollocationFinder.from_words(full_tokens)
     coll_finder.apply_freq_filter(5)
-    coll_finder.apply_word_filter(lambda w: len(w) < 3)
+    coll_finder.apply_word_filter(lambda w: len(w.split('%')[0]) < 2)
     result = coll_finder.score_ngrams(BigramAssocMeasures().raw_freq)
     # Join the word entries of the phrase.
     for row_n, row in enumerate(result):
@@ -109,11 +109,11 @@ def form_trigrams(sections, method_options):
                 try: # can fail if something isn't a readable token
                     token = ParsedToken.from_str(t_str)
                     full_tokens.append('{}%{}%{}'.format(token.form, token.lemma, token.interp_str()))
-                except:
+                except NoneTokenError:
                     pass
     coll_finder = TrigramCollocationFinder.from_words(full_tokens)
     coll_finder.apply_freq_filter(5)
-    coll_finder.apply_word_filter(lambda w: len(w) < 3)
+    coll_finder.apply_word_filter(lambda w: len(w.split('%')[0]) < 2)
     result = coll_finder.score_ngrams(TrigramAssocMeasures().raw_freq)
     # Join the word entries of the phrase.
     for row_n, row in enumerate(result):
@@ -133,11 +133,11 @@ def lemma_bigrams(sections, method_options):
             for t_str in tokens:
                 try: # can fail if something isn't a readable token
                     full_tokens.append(ParsedToken.from_str(t_str).lemma)
-                except:
+                except NoneTokenError:
                     pass
     coll_finder = BigramCollocationFinder.from_words(full_tokens)
     coll_finder.apply_freq_filter(5)
-    coll_finder.apply_word_filter(lambda w: len(w) < 3)
+    coll_finder.apply_word_filter(lambda w: len(w) < 2)
     result = coll_finder.score_ngrams(BigramAssocMeasures().raw_freq)
     # Join the word entries of the phrase.
     for row_n, row in enumerate(result):
@@ -154,11 +154,11 @@ def lemma_trigrams(sections, method_options):
             for t_str in tokens:
                 try: # can fail if something isn't a readable token
                     full_tokens.append(ParsedToken.from_str(t_str).lemma)
-                except:
+                except NoneTokenError:
                     pass
     coll_finder = TrigramCollocationFinder.from_words(full_tokens)
     coll_finder.apply_freq_filter(5)
-    coll_finder.apply_word_filter(lambda w: len(w) < 3)
+    coll_finder.apply_word_filter(lambda w: len(w) < 2)
     result = coll_finder.score_ngrams(TrigramAssocMeasures().raw_freq)
     # Join the word entries of the phrase.
     for row_n, row in enumerate(result):
