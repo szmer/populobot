@@ -4,8 +4,11 @@
 import os
 from os import makedirs
 
+# TODO: integrate into methods.py and preloading profile in running script
+#
+
 def keyword_distribution(experiment_name, subset_names, method_options):
-    """(dependent on lemma frequency)"""
+    """Count occurences of keyword lemmas configured in profile (using lemma frequency)."""
     # Collect the lemma groups.
     #
     # Groups are stored as tuples: (group_name, list of lists of lemmas)
@@ -53,4 +56,3 @@ def keyword_distribution(experiment_name, subset_names, method_options):
                         if lemma_entry[1] == 0:
                             continue
                         print('{} - {}'.format(lemma_entry[0], lemma_entry[1]), file=subset_file)
-
