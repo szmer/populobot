@@ -126,10 +126,13 @@ def prepare_lemma_corpus(sections, omit_suspicious_interps):
                     pass
     return full_tokens
 
-def find_lemma_collocations(full_tokens, finder, metric):
+def find_lemma_collocations(full_tokens, finder, metric, needed_words=[]):
     coll_finder = finder.from_words(full_tokens)
     coll_finder.apply_freq_filter(5)
     coll_finder.apply_word_filter(lambda w: len(w) < 2)
+    if needed_words:
+        # Reject all ngrams that don't have one of required words as their lemmas.
+        coll_finder.apply_ngram_filter(lambda *args: not any([(a in needed_words) for a in args]))
     result = coll_finder.score_ngrams(metric)
     return result
 
@@ -145,7 +148,7 @@ def lemma_frequency(sections, method_options):
 def lemma_bigrams(sections, method_options):
     full_tokens = prepare_lemma_corpus(sections, method_options['omit_suspicious_interps'])
     result = find_lemma_collocations(full_tokens, BigramCollocationFinder, BigramAssocMeasures().raw_freq) 
-    # Join the word entries of the phrase.
+    # Form the result tuples.
     for row_n, row in enumerate(result):
         result[row_n] = (' '.join(row[0]), row[1], round(row[1] * len(full_tokens)))
     # Sort by frequency.
@@ -155,7 +158,7 @@ def lemma_bigrams(sections, method_options):
 def lemma_trigrams(sections, method_options):
     full_tokens = prepare_lemma_corpus(sections, method_options['omit_suspicious_interps'])
     result = find_lemma_collocations(full_tokens, TrigramCollocationFinder, TrigramAssocMeasures().raw_freq) 
-    # Join the word entries of the phrase.
+    # Form the result tuples.
     for row_n, row in enumerate(result):
         result[row_n] = (' '.join(row[0]), row[1], round(row[1] * len(full_tokens)))
     # Sort by frequency.
@@ -188,6 +191,24 @@ def keywords_bigrams(sections, method_options):
     result.sort(key=lambda x: x[-1], reverse=True)
     return result
 
+def keywords_lemma_bigrams(sections, method_options):
+    category = method_options['keyword_category']
+    full_tokens = prepare_lemma_corpus(sections, method_options['omit_suspicious_interps'])
+    for token_n, lemma_token in enumerate(full_tokens):
+        for group_n, group in enumerate(category):
+            if lemma_token in group:
+                full_tokens[token_n] = group_placeholder(group)
+                break
+    result = find_lemma_collocations(full_tokens, BigramCollocationFinder,
+                                    BigramAssocMeasures().likelihood_ratio,
+                                    needed_words=[group_placeholder(group) for group in category])
+    # Form the result tuples.
+    for row_n, row in enumerate(result):
+        result[row_n] = (' '.join(row[0]), row[1], round(row[1] * len(full_tokens)))
+    # Sort by frequency.
+    result.sort(key=lambda x: x[-1], reverse=True)
+    return result
+
 def keywords_trigrams(sections, method_options):
     category = method_options['keyword_category']
     full_tokens = prepare_form_corpus(sections)
@@ -204,6 +225,24 @@ def keywords_trigrams(sections, method_options):
                                     needed_words=[group_placeholder(group) for group in category])
     for row_n, row in enumerate(result):
         result[row_n] = unpack_ngram_forms(row[0]) + (row[1],)
+    # Sort by frequency.
+    result.sort(key=lambda x: x[-1], reverse=True)
+    return result
+
+def keywords_lemma_trigrams(sections, method_options):
+    category = method_options['keyword_category']
+    full_tokens = prepare_lemma_corpus(sections, method_options['omit_suspicious_interps'])
+    for token_n, lemma_token in enumerate(full_tokens):
+        for group_n, group in enumerate(category):
+            if lemma_token in group:
+                full_tokens[token_n] = group_placeholder(group)
+                break
+    result = find_lemma_collocations(full_tokens, TrigramCollocationFinder,
+                                    TrigramAssocMeasures().likelihood_ratio,
+                                    needed_words=[group_placeholder(group) for group in category])
+    # Form the result tuples.
+    for row_n, row in enumerate(result):
+        result[row_n] = (' '.join(row[0]), row[1], round(row[1] * len(full_tokens)))
     # Sort by frequency.
     result.sort(key=lambda x: x[-1], reverse=True)
     return result

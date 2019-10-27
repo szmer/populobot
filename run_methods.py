@@ -3,7 +3,7 @@ import datetime
 import os
 import yaml
 
-from popbot_src.methods import apply_method, basic_stats, form_frequency, lemma_frequency, form_bigrams, form_trigrams, lemma_bigrams, lemma_trigrams, keywords_bigrams, keywords_trigrams
+from popbot_src.methods import apply_method, basic_stats, form_frequency, lemma_frequency, form_bigrams, form_trigrams, lemma_bigrams, lemma_trigrams, keywords_bigrams, keywords_trigrams, keywords_lemma_bigrams, keywords_lemma_trigrams
 from popbot_src.meta_methods import keyword_distribution
 from popbot_src.subset_getter import make_subset_index
 
@@ -82,6 +82,10 @@ if not args.skip_basic:
         apply_method(experiment_name, 'keywords_bigr_'+category_name, keywords_bigrams,
                      subsets, method_options)
         apply_method(experiment_name, 'keywords_trigr_'+category_name, keywords_trigrams,
+                     subsets, method_options)
+        apply_method(experiment_name, 'keywords_lem_bigr_'+category_name, keywords_lemma_bigrams,
+                     subsets, method_options)
+        apply_method(experiment_name, 'keywords_lem_trigr_'+category_name, keywords_lemma_trigrams,
                      subsets, method_options)
 
 if not args.skip_meta:
