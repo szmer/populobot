@@ -1,7 +1,9 @@
 import csv
 import datetime
 import io
+
 from popbot_src.load_helpers import extract_dates, fuzzy_match
+from popbot_src.parsed_token import ParsedToken
 
 def tuple_to_datetime(date_tuple):
     return datetime.date(date_tuple[2], date_tuple[1], date_tuple[0])
@@ -39,6 +41,13 @@ class Section():
     def title(self):
         if len(self.pages_paragraphs) > 0:
             return self.pages_paragraphs[0][1]
+        else:
+            return ''
+
+    def deparsed_title(self):
+        if len(self.pages_paragraphs) > 0:
+            title_tokens = [ParsedToken.from_str(t) for t in self.pages_paragraphs[0][1].strip().split()]
+            return ' '.join([t.form for t in title_tokens])
         else:
             return ''
 

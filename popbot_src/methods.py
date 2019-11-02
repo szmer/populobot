@@ -43,7 +43,7 @@ def prepare_form_corpus(sections):
     "Return all tokens in one list, in form form%lemma%interp"
     full_tokens = []
     for section in sections:
-        for pg, par in section.pages_paragraphs:
+        for pg, par in section.pages_paragraphs[1:]: # skip the title
             tokens = list(re.split('\\s', par))
             for t_str in tokens:
                 try: # can fail if something isn't a readable token
@@ -115,7 +115,7 @@ def prepare_lemma_corpus(sections, omit_suspicious_interps):
     "Return all tokens in one list"
     full_tokens = []
     for section in sections:
-        for pg, par in section.pages_paragraphs:
+        for pg, par in section.pages_paragraphs[1:]: # skip the title
             tokens = list(re.split('\\s', par))
             for t_str in tokens:
                 try: # can fail if something isn't a readable token

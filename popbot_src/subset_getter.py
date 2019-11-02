@@ -3,6 +3,25 @@ from random import shuffle
 from popbot_src.indexing_common import load_document_sections
 from popbot_src.indexing_helpers import apply_decisions1, read_config_file, read_manual_decisions
 
+def load_file_list(file_list_path):
+    with open(file_list_path) as list_file:
+        fnames = list_file.readlines()
+
+    # Load sections.
+    all_sections = []
+    for file_row in fnames:
+        file_fields = file_row.split()
+        filename = file_fields[0]
+        sections = load_document_sections(filename)
+        if len(file_fields) > 1:
+            manual_decisions = read_manual_decisions(file_fields[1])
+            config = read_config_file(file_fields[2])
+            sections = apply_decisions1(sections, manual_decisions, config)
+        # Leave out non-document and non-pertinent sections.
+        sections = [s for s in sections if s.section_type == 'document' and s.pertinence]
+        all_sections += sections
+    return all_sections
+
 def section_indices(section, attrnames, date_ranges=[]):
     """Return all indices under which the section should be filed. If date_ranges are provided (as
     datetime objects), the date attribute is compared against them and appropriate ranges are also
@@ -71,22 +90,7 @@ def weight_index(section_index, indexed_attrs, weighted_param, weighted_values, 
 
 def make_subset_index(file_list_path, indexed_attrs, date_ranges=[], subcorpus_weightings=[]):
     """Return a list of tuples: subset name, list of subset sections"""
-    with open(file_list_path) as list_file:
-        fnames = list_file.readlines()
-
-    # Load sections.
-    all_sections = []
-    for file_row in fnames:
-        file_fields = file_row.split()
-        filename = file_fields[0]
-        sections = load_document_sections(filename)
-        if len(file_fields) > 1:
-            manual_decisions = read_manual_decisions(file_fields[1])
-            config = read_config_file(file_fields[2])
-            sections = apply_decisions1(sections, manual_decisions, config)
-        # Leave out non-document and non-pertinent sections.
-        sections = [s for s in sections if s.section_type == 'document' and s.pertinence]
-        all_sections += sections
+    all_sections = load_file_list(file_list_path)
 
     # Index sections.
     section_index = dict()
