@@ -53,23 +53,36 @@ def prepare_form_corpus(sections):
                     pass
     return full_tokens
 
-def find_form_collocations(full_tokens, finder, metric, needed_words=[]):
+def unpack_ngram_forms(ngram_tuple):
+    """Take a tuple of n forms coded with lemmas and interpretations and unpack it into a n*3 tuple
+    with these elements separated."""
+    result = []
+    for form_record in ngram_tuple:
+        result += form_record.split('%')
+    return result
+
+def find_form_collocations(full_tokens, finder, metrics_obj, needed_words=[]):
     coll_finder = finder.from_words(full_tokens)
-    coll_finder.apply_freq_filter(3)
+    coll_finder.apply_freq_filter(2)
     coll_finder.apply_word_filter(lambda w: len(w.split('%')[0]) < 2)
     if needed_words:
         # Reject all ngrams that don't have one of required words as their lemmas.
         coll_finder.apply_ngram_filter(lambda *args: not any([(a.split('%')[1] in needed_words)
                                                               for a in args]))
-    result = coll_finder.score_ngrams(metric)
-    return result
-
-def unpack_ngram_forms(ngram_tuple):
-    """Take a tuple of n forms coded with lemmas and interpretations and unpack it into a n*3 tuple
-    with these elements separated."""
-    result = tuple()
-    for form_record in ngram_tuple:
-        result += tuple(form_record.split('%'))
+    result = coll_finder.score_ngrams(metrics_obj.raw_freq)
+    # Format the result as a list of tuples.
+    for row_n, row in enumerate(result):
+        # join the word entries of the phrase into the outer tuple:
+        result[row_n] = (unpack_ngram_forms(row[0])
+                         # the retrieved frequency will be an integer, but sometimes with a minor
+                         # float corruption
+                         + [round(row[1] * len(full_tokens)),
+                             # Add other metrics to the tuple; the list of arguments needs to be
+                             # constructed at runtime for both n-gram sizes.
+                             coll_finder.score_ngram(*([metrics_obj.jaccard] + list(row[0]))),
+                             coll_finder.score_ngram(*([metrics_obj.likelihood_ratio] + list(row[0])))])
+    # Sort by frequency.
+    result.sort(key=lambda x: x[-3], reverse=True)
     return result
 
 def form_frequency(sections, method_options):
@@ -84,28 +97,12 @@ def form_frequency(sections, method_options):
 
 def form_bigrams(sections, method_options):
     full_tokens = prepare_form_corpus(sections)
-    result = find_form_collocations(full_tokens, BigramCollocationFinder, BigramAssocMeasures().raw_freq)
-    # Join the word entries of the phrase.
-    for row_n, row in enumerate(result):
-        result[row_n] = (unpack_ngram_forms(row[0])
-                         # the retrieved frequency will be an integer, but sometimes with a minor
-                         # float corruption
-                         + (row[1], round(row[1] * len(full_tokens))))
-    # Sort by frequency.
-    result.sort(key=lambda x: x[-1], reverse=True)
+    result = find_form_collocations(full_tokens, BigramCollocationFinder, BigramAssocMeasures())
     return result
 
 def form_trigrams(sections, method_options):
     full_tokens = prepare_form_corpus(sections)
-    result = find_form_collocations(full_tokens, TrigramCollocationFinder, TrigramAssocMeasures().raw_freq)
-    # Join the word entries of the phrase.
-    for row_n, row in enumerate(result):
-        result[row_n] = (unpack_ngram_forms(row[0])
-                         # the retrieved frequency will be an integer, but sometimes with a minor
-                         # float corruption
-                         + (row[1], round(row[1] * len(full_tokens))))
-    # Sort by frequency.
-    result.sort(key=lambda x: x[-1], reverse=True)
+    result = find_form_collocations(full_tokens, TrigramCollocationFinder, TrigramAssocMeasures())
     return result
 
 #
@@ -126,14 +123,27 @@ def prepare_lemma_corpus(sections, omit_suspicious_interps):
                     pass
     return full_tokens
 
-def find_lemma_collocations(full_tokens, finder, metric, needed_words=[]):
+def find_lemma_collocations(full_tokens, finder, metrics_obj, needed_words=[]):
     coll_finder = finder.from_words(full_tokens)
-    coll_finder.apply_freq_filter(5)
+    coll_finder.apply_freq_filter(2)
     coll_finder.apply_word_filter(lambda w: len(w) < 2)
     if needed_words:
         # Reject all ngrams that don't have one of required words as their lemmas.
         coll_finder.apply_ngram_filter(lambda *args: not any([(a in needed_words) for a in args]))
-    result = coll_finder.score_ngrams(metric)
+    result = coll_finder.score_ngrams(metrics_obj.raw_freq)
+    # Format the result as a list of tuples.
+    for row_n, row in enumerate(result):
+        # join the word entries of the phrase into the outer tuple:
+        result[row_n] = (list(row[0])
+                         # the retrieved frequency will be an integer, but sometimes with a minor
+                         # float corruption
+                         + [round(row[1] * len(full_tokens)),
+                             # Add other metrics to the tuple; the list of arguments needs to be
+                             # constructed at runtime for both n-gram sizes.
+                             coll_finder.score_ngram(*([metrics_obj.jaccard] + list(row[0]))),
+                             coll_finder.score_ngram(*([metrics_obj.likelihood_ratio] + list(row[0])))])
+    # Sort by frequency.
+    result.sort(key=lambda x: x[-3], reverse=True)
     return result
 
 def lemma_frequency(sections, method_options):
@@ -147,28 +157,19 @@ def lemma_frequency(sections, method_options):
 
 def lemma_bigrams(sections, method_options):
     full_tokens = prepare_lemma_corpus(sections, method_options['omit_suspicious_interps'])
-    result = find_lemma_collocations(full_tokens, BigramCollocationFinder, BigramAssocMeasures().raw_freq) 
-    # Form the result tuples.
-    for row_n, row in enumerate(result):
-        result[row_n] = (' '.join(row[0]), row[1], round(row[1] * len(full_tokens)))
-    # Sort by frequency.
-    result.sort(key=lambda x: x[-1], reverse=True)
+    result = find_lemma_collocations(full_tokens, BigramCollocationFinder, BigramAssocMeasures()) 
     return result
 
 def lemma_trigrams(sections, method_options):
     full_tokens = prepare_lemma_corpus(sections, method_options['omit_suspicious_interps'])
-    result = find_lemma_collocations(full_tokens, TrigramCollocationFinder, TrigramAssocMeasures().raw_freq) 
-    # Form the result tuples.
-    for row_n, row in enumerate(result):
-        result[row_n] = (' '.join(row[0]), row[1], round(row[1] * len(full_tokens)))
-    # Sort by frequency.
-    result.sort(key=lambda x: x[-1], reverse=True)
+    result = find_lemma_collocations(full_tokens, TrigramCollocationFinder, TrigramAssocMeasures()) 
     return result
 
 #
 # Keyword collocations.
 #
 def group_placeholder(group):
+    """Give the group marker a mock form/lemma formed from its constituents."""
     return '__' + '-'.join(group[:3]+(['...'] if len(group) > 3 else []))
 
 def keywords_bigrams(sections, method_options):
@@ -183,12 +184,8 @@ def keywords_bigrams(sections, method_options):
                 break
         full_tokens[token_n] = '%'.join(fields)
     result = find_form_collocations(full_tokens, BigramCollocationFinder,
-                                    BigramAssocMeasures().likelihood_ratio,
+                                    BigramAssocMeasures(),
                                     needed_words=[group_placeholder(group) for group in category])
-    for row_n, row in enumerate(result):
-        result[row_n] = unpack_ngram_forms(row[0]) + (row[1],)
-    # Sort by frequency.
-    result.sort(key=lambda x: x[-1], reverse=True)
     return result
 
 def keywords_lemma_bigrams(sections, method_options):
@@ -200,13 +197,8 @@ def keywords_lemma_bigrams(sections, method_options):
                 full_tokens[token_n] = group_placeholder(group)
                 break
     result = find_lemma_collocations(full_tokens, BigramCollocationFinder,
-                                    BigramAssocMeasures().likelihood_ratio,
+                                    BigramAssocMeasures(),
                                     needed_words=[group_placeholder(group) for group in category])
-    # Form the result tuples.
-    for row_n, row in enumerate(result):
-        result[row_n] = (' '.join(row[0]), row[1], round(row[1] * len(full_tokens)))
-    # Sort by frequency.
-    result.sort(key=lambda x: x[-1], reverse=True)
     return result
 
 def keywords_trigrams(sections, method_options):
@@ -221,12 +213,8 @@ def keywords_trigrams(sections, method_options):
                 break
         full_tokens[token_n] = '%'.join(fields)
     result = find_form_collocations(full_tokens, TrigramCollocationFinder,
-                                    TrigramAssocMeasures().likelihood_ratio,
+                                    TrigramAssocMeasures(),
                                     needed_words=[group_placeholder(group) for group in category])
-    for row_n, row in enumerate(result):
-        result[row_n] = unpack_ngram_forms(row[0]) + (row[1],)
-    # Sort by frequency.
-    result.sort(key=lambda x: x[-1], reverse=True)
     return result
 
 def keywords_lemma_trigrams(sections, method_options):
@@ -238,13 +226,8 @@ def keywords_lemma_trigrams(sections, method_options):
                 full_tokens[token_n] = group_placeholder(group)
                 break
     result = find_lemma_collocations(full_tokens, TrigramCollocationFinder,
-                                    TrigramAssocMeasures().likelihood_ratio,
+                                    TrigramAssocMeasures(),
                                     needed_words=[group_placeholder(group) for group in category])
-    # Form the result tuples.
-    for row_n, row in enumerate(result):
-        result[row_n] = (' '.join(row[0]), row[1], round(row[1] * len(full_tokens)))
-    # Sort by frequency.
-    result.sort(key=lambda x: x[-1], reverse=True)
     return result
 
 #

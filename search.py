@@ -39,11 +39,11 @@ class SearchShell(Cmd):
         for sec_n, pages_paragraphs in enumerate(parsed_section_pars):
             for pg, tokens in pages_paragraphs:
                 for t_i, token in enumerate(tokens):
-                    if re.match(patterns[0], token.lemma) is not None:
+                    if re.search(patterns[0], token.lemma):
                         # Check if the rest of tokens match.
                         for shift in range(1, len(patterns)):
                             if (t_i + shift >= len(tokens)
-                               or re.match(patterns[shift], tokens[t_i + shift].lemma) is None):
+                               or not re.search(patterns[shift], tokens[t_i + shift].lemma)):
                                 break
                         else:
                             forms = [t.form for t in tokens]

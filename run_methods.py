@@ -45,6 +45,8 @@ keyword_categories = []
 top_dir = profile_dir+'/keyword_categories/'
 for root, dirs, files in os.walk(top_dir):
     for filename in files:
+        if not filename.endswith('.txt'):
+            continue
         category_name = filename[:-len('.txt')]
         if category_name[0] == '_': # skip if starts with an underscore
             continue
