@@ -27,6 +27,7 @@ każdy
 koń
 kościół
 mały
+miara
 miasteczko
 miasto
 miejsce

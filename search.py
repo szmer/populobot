@@ -5,6 +5,7 @@ from termcolor import colored, cprint
 
 from popbot_src.subset_getter import load_file_list
 from popbot_src.parsed_token import ParsedToken
+from popbot_src.section import tuple_to_datetime
 
 argparser = argparse.ArgumentParser(description='Search the corpus for phrases in context.')
 argparser.add_argument('file_list_path')
@@ -26,9 +27,22 @@ class SearchShell(Cmd):
     def do_lex(self, patterns):
         """Find phrases containing the given lexeme sequence and display them in context."""
         patterns = patterns.split()
+        date_range = [pat for pat in patterns if pat.startswith('DR:')]
+        patterns = [pat for pat in patterns if not pat.startswith('DR:')]
         if len(patterns) == 0:
             print('No lexemes given.')
             return
+        # Unpack the date range if present.
+        if date_range:
+            if len(date_range) > 1:
+                print('More than one date range given.')
+                return
+            try:
+                date_range = [tuple_to_datetime(d.split('-')) for d in date_range[0].split(':')[1:]]
+                assert len(date_range) == 2
+            except:
+                print('Cannot parse the date range.')
+                return
         # Sort regexes and verbatim lexemes.
         for pa_i, pattern in enumerate(patterns):
             if pattern.startswith('RE:'):
@@ -37,6 +51,10 @@ class SearchShell(Cmd):
                 patterns[pa_i] = '^{}$'.format(pattern)
         matches_count = 0
         for sec_n, pages_paragraphs in enumerate(parsed_section_pars):
+            if date_range and (not all_sections[sec_n].date
+                               or all_sections[sec_n].date < date_range[0]
+                               or all_sections[sec_n].date >= date_range[1]):
+                continue
             for pg, tokens in pages_paragraphs:
                 for t_i, token in enumerate(tokens):
                     if re.search(patterns[0], token.lemma):

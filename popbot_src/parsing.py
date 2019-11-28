@@ -72,6 +72,7 @@ def split_morfeusz_sents(morfeusz_nodes, verbose=False):
     return sents
 
 def write_dag_from_morfeusz(path, morfeusz_nodes, append_sentence=False):
+    """Write the Morfeusz output graph (DAG) to a file, where it can be read from by Concraft"""
     open_settings = 'a' if append_sentence else 'w+'
     with open(path, open_settings, encoding='utf-8') as out:
         for (node_n, node) in enumerate(morfeusz_nodes):

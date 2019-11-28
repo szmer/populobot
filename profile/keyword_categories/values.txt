@@ -2,6 +2,7 @@ Bóg święty
 całość
 zgoda zgodnie consensus consensibus consensuum consensui consensum consensu
 dobro dobry dobrze
+fidei fidem fiderum fides fide fidebus
 prawo iura iuribus iure iuris iuri ius iurum lege legi leges legum legibus legis lex legem
 łaska
 meriti meritis meritorum merito merita meritum
@@ -15,7 +16,8 @@ przysięga
 respekt
 securitatibus securitatem securitatum securitatis securitate securitati securitates securitas
 sprawiedliwość
-usługa zasługa
+szczęśliwy
+usługa
 wolność
 zdrowie
 zwyczaj

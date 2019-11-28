@@ -9,6 +9,7 @@ starosta starostwo generał podstarości
 gród
 hetman podskarbi
 JKM JKMć król królewski książę majestat
+kapturowy
 kasztelan wojewoda
 koło rada
 marszałek
@@ -20,6 +21,6 @@ sąd sędzia podsędek
 sejm sejmowy
 sejmik zjazd
 regnum regni regnis regnorum regno regna Regnum Regni Regnis Regnorum Regno Regna
-Rzeczpospolita Rzpta Rzplta Republica Republicam Republicae Republicarum Republicis Republicas republica republicam republicae republicarum republicis republicas
+Rzeczpospolita Rzpta Rzplta rzeczpospolita rzpta rzplta Republica Republicam Republicae Republicarum Republicis Republicas republica republicam republicae republicarum republicis republicas
 urząd urzędnik
 wojski

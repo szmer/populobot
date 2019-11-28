@@ -1,4 +1,5 @@
 dom
+forteca zamek
 granica
 kościół
 łan
@@ -8,4 +9,3 @@ miejsce
 obóz
 powiat
 wieś
-zamek

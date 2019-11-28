@@ -6,7 +6,8 @@ from popbot_src.load_helpers import extract_dates, fuzzy_match
 from popbot_src.parsed_token import ParsedToken
 
 def tuple_to_datetime(date_tuple):
-    return datetime.date(date_tuple[2], date_tuple[1], date_tuple[0])
+    # this function expects the order: year, month, day (but we use the reverse)
+    return datetime.date(int(date_tuple[2]), int(date_tuple[1]), int(date_tuple[0]))
 
 # Section class template.
 class Section():
@@ -22,7 +23,7 @@ class Section():
                 scan_page,
                 self.section_type,
                 # write it as a tuple from the datetime object
-                (self.date.day, self.date.month, self.date.year),
+                (self.date.day, self.date.month, self.date.year) if self.date else False,
                 self.palatinate,
                 self.convent_location,
                 self.created_location,

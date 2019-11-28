@@ -1,4 +1,7 @@
-import doctest, re, roman
+import datetime
+import doctest
+import re
+import roman
 
 MONTHS = '(stycze?[nń])|(luty?)|(marz?e?c)|(kwie[tc]i?e?[nń])|(maj)|(czerwi?e?c)|(lipi?e?c)|(sierpi?e?[nń])|(wrze[sś]i?e?[nń])|(październik)|(listopad)|(grudz?i?e?[nń])|([ji]anuar)|(februar)|(mart)|(april)|(mai)|([ji]u[nl]i)|(august)|(septemb)|(octob)|(decemb)'
 
@@ -240,6 +243,11 @@ def extract_dates(string, verbose=False):
         if verbose:
             print('{} - day number'.format(day_number))
             print('Date found: {}'.format(day_number, month_number, year_number))
+
+        try:
+            datetime.date(year_number, month_number, day_number)
+        except ValueError: # mostly bad day number
+            continue
 
         dates.append((day_number, month_number, year_number))
 

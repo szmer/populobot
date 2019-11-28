@@ -11,4 +11,5 @@ rzecz
 sposób
 sprawa
 stan statu statuum statum statui status statibus
+termin
 zwyczajny
