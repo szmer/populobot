@@ -35,6 +35,9 @@ def load_document_sections(csv_path, print_titles=False):
     return document_sections
 
 def load_edition(config_file_path, manual_decisions_file=False, output_stream=sys.stdout):
+    """
+    Load the edition, using config_file_path, as a list of Section objects.
+    """
     # Load the config
     config = read_config_file(config_file_path)
 

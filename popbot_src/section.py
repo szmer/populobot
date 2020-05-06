@@ -11,6 +11,59 @@ def tuple_to_datetime(date_tuple):
 
 # Section class template.
 class Section():
+    def __init__(self):
+        pass
+
+    @classmethod
+    def new(cls, config, section_type, section_content, document_id=False, pertinence='default'):
+        self = cls()
+        self.book_title = config['book_title']
+        self.inbook_section_id = False # not included in any yet
+        self.inbook_document_id = document_id
+        self.section_type = section_type
+        self.date = False
+        self.palatinate = config['palatinate']
+        self.convent_location = config['convent_location']
+        self.created_location = False
+        self.author = config['default_convent_author']
+        # This is expected to be a list of pairs (scanpage_num, paragraph).
+        self.pages_paragraphs = section_content
+        if pertinence == 'default':
+            if section_type == 'document':
+                self.pertinence = True
+            else:
+                self.pertinence = False
+        else:
+            self.pertinence = pertinence
+#        if section_id == 23:
+#            fail()
+        return self
+
+    @classmethod
+    def from_csv_row(cls, row):
+        self = cls()
+        self.book_title = row[0]
+        self.inbook_section_id = int(row[1])
+        try:
+            self.inbook_document_id = int(row[2])
+        except:
+            self.inbook_document_id = row[2]
+        #self.scan_page #= #row[3]
+        #self.book_page #= #row[4]
+        self.section_type = row[4]
+        try:
+            # They're written as tuples to strings (in theory could be eval'ed).
+            date_tuple = tuple([int(f.strip()) for f in row[5][1:-1].split(',')])
+            self.date = tuple_to_datetime(date_tuple)
+        except:
+            self.date = False
+        self.palatinate = row[6]
+        self.convent_location = row[7]
+        self.created_location = row[8]
+        self.author = row[9]
+        self.pages_paragraphs = [(int(row[3]), row[10])]
+        self.pertinence = (row[11] == 'True')
+        return self
     def row_strings(self):
         rows = []
         for scan_page, paragraph in self.pages_paragraphs:
@@ -181,60 +234,6 @@ class Section():
             self.date = tuple_to_datetime(sorted_dates[0])
             return self.date
         return False
-
-    def __init__(self):
-        pass
-
-    @classmethod
-    def new(cls, config, section_type, section_content, document_id=False, pertinence='default'):
-        self = cls()
-        self.book_title = config['book_title']
-        self.inbook_section_id = False # not included in any yet
-        self.inbook_document_id = document_id
-        self.section_type = section_type
-        self.date = False
-        self.palatinate = config['palatinate']
-        self.convent_location = config['convent_location']
-        self.created_location = False
-        self.author = config['default_convent_author']
-        # This is expected to be a list of pairs (scanpage_num, paragraph).
-        self.pages_paragraphs = section_content
-        if pertinence == 'default':
-            if section_type == 'document':
-                self.pertinence = True
-            else:
-                self.pertinence = False
-        else:
-            self.pertinence = pertinence
-#        if section_id == 23:
-#            fail()
-        return self
-
-    @classmethod
-    def from_csv_row(cls, row):
-        self = cls()
-        self.book_title = row[0]
-        self.inbook_section_id = int(row[1])
-        try:
-            self.inbook_document_id = int(row[2])
-        except:
-            self.inbook_document_id = row[2]
-        #self.scan_page #= #row[3]
-        #self.book_page #= #row[4]
-        self.section_type = row[4]
-        try:
-            # They're written as tuples to strings (in theory could be eval'ed).
-            date_tuple = tuple([int(f.strip()) for f in row[5][1:-1].split(',')])
-            self.date = tuple_to_datetime(date_tuple)
-        except:
-            self.date = False
-        self.palatinate = row[6]
-        self.convent_location = row[7]
-        self.created_location = row[8]
-        self.author = row[9]
-        self.pages_paragraphs = [(int(row[3]), row[10])]
-        self.pertinence = (row[11] == 'True')
-        return self
 
     def append_csv_row(self, row):
         """Returns True if successful, False if the row doesn't belong to the section."""

@@ -5,7 +5,8 @@ class NoneTokenError(Exception):
 
 class ParsedToken():
     def __init__(self, form, lemma, interp,
-            proper_name=False, unknown_form=False, latin=False, corrected=False):
+            proper_name=False, unknown_form=False, latin=False, corrected=False,
+            pause='', corresp_index=False):
         self.form = form
         self.lemma = lemma
         if not isinstance(interp, list):
@@ -15,6 +16,10 @@ class ParsedToken():
         self.unknown_form = unknown_form
         self.latin = latin
         self.corrected = corrected
+        # Pause is the string that separates this token from the previous one.
+        self.pause = pause
+        # The index in the original paragraph where the token starts.
+        self.corresp_index = corresp_index
 
     @classmethod
     def from_str(cls, token_str):
