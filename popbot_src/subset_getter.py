@@ -37,12 +37,15 @@ def section_indices(section, attrnames, date_ranges=[]):
     return indices
 
 def weight_index(section_index, indexed_attrs, weighted_param, weighted_values, date_ranges=[]):
+    """
+
+    """
     weighted_section_index = dict()
     weighted_section_index['ALL'] = []
     # Observed total string-lengths of all subcorpora.
-    potentially_weighted = list([index for index in section_index.keys() if index.startswith(weighted_param)])
-    if len(weighted_values.items()) != len(potentially_weighted):
-        raise RuntimeError('Some of the values not present in weightings: {}'.format(potentially_weighted))
+    ###-potentially_weighted = list([index for index in section_index.keys() if index.startswith(weighted_param)])
+    ###-if len(weighted_values.items()) != len(potentially_weighted):
+    ###-    raise RuntimeError('Some of the values not present in weightings: {}'.format(potentially_weighted))
     observed_lengths = [] # to be converted to a dict
     for value in weighted_values:
         index = '{}__{}'.format(weighted_param, value)

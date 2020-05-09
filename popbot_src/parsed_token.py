@@ -1,12 +1,37 @@
-# The class for saving parsed tokens obtained by morpho.py.
+class SentenceDAG():
+    """
+    A Directed Acyclic Graph representing possible paths through the sentence.
+    """
+    def __init__(self):
+        self.tokens = []
+
+    def chosen_tokens(self):
+        """
+        Get the list of only the tokens chosen in disambiguation, in the right sequence.
+        """
+        first_token = [tok for tok in self.tokens if tok.sentence_starting and tok.chosen]
+        if len(first_token) != 1:
+            raise ValueError('Cannot find one first token ({}) in {}'.format(first_token,
+                self.tokens))
+        result_tokens = first_token
+        while result_tokens[-1].forward_paths:
+            forward_token = [tok for tok in result_tokens[-1].forward_tokens if tok.chosen]
+            if len(forward_token) != 1:
+                raise ValueError('Cannot find one first token ({}) in {}'.format(forward_token,
+                    result_tokens[-1].forward_tokens))
+            result_tokens.append(forward_token[0])
+        return result_tokens
 
 class NoneTokenError(Exception):
     pass
 
 class ParsedToken():
+    """
+    The class for saving parsed tokens obtained by morpho.py.
+    """
     def __init__(self, form, lemma, interp,
             proper_name=False, unknown_form=False, latin=False, corrected=False,
-            pause='', corresp_index=False):
+            pause='', corresp_index=False, chosen=True, sentence_starting=False):
         self.form = form
         self.lemma = lemma
         if not isinstance(interp, list):
@@ -20,6 +45,9 @@ class ParsedToken():
         self.pause = pause
         # The index in the original paragraph where the token starts.
         self.corresp_index = corresp_index
+        self.chosen = chosen # whether the token was chosen during disambiguation
+        self.forward_paths = [] # all possible tokens after this one in the sentence DAG
+        self.sentence_starting = sentence_starting
 
     @classmethod
     def from_str(cls, token_str):

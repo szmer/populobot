@@ -1,11 +1,13 @@
 from collections import defaultdict
 import json
+import re
 import yaml
 from copy import copy
 from itertools import chain
 
-from popbot_src.section import Section, tuple_to_datetime
+from popbot_src.section import Section, tuple_to_datetime, transfer_pause_data
 from popbot_src.load_helpers import fuzzy_match, is_pertinent
+from popbot_src.parsed_token import ParsedToken
 
 def read_config_file(config_file_path):
     with open(config_file_path) as config_file:
@@ -186,3 +188,19 @@ def commit_doc_with_decisions(config, sections, pages_paragraphs, manual_decisio
             latest_doc_section_n = ''.join([s.section_type[0] for s in sections]).rfind('d')
     return current_document_id, latest_doc_section_n
 
+def editions_transfer_pause_data(parsed_edition, raw_edition):
+    assert len(parsed_edition) == len(raw_edition)
+    for parsed_section, raw_section in zip(parsed_edition, raw_edition):
+        if parsed_section.section_type != 'document':
+            continue
+        transfer_pause_data(parsed_section, raw_section)
+
+def section_paragraphs_to_tokens(sections):
+    for section in sections:
+        if section.section_type != 'document':
+            continue
+        for par_n, (pg, par) in enumerate(section.pages_paragraphs):
+            tokens = re.split('\\s', par)
+            tokens = [ParsedToken.from_str(t_str) for t_str in tokens if t_str.strip() != '']
+            section.pages_paragraphs[par_n] = (pg, tokens)
+    return sections

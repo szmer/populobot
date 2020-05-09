@@ -1,14 +1,11 @@
-import os, re
-
+import copy
+from logging import info
+import os
 import pexpect
-from popbot_src.parsed_token import ParsedToken
+import re
+import yaml
 
-# Setup CLTK for Latin detection.
-from cltk.corpus.utils.importer import CorpusImporter
-corpus_importer = CorpusImporter('latin')
-corpus_importer.import_corpus('latin_models_cltk')
-from cltk.semantics.latin.lookup import Lemmata
-latin_lemmatizer = Lemmata(dictionary='lemmata', language='latin')
+from popbot_src.parsed_token import ParsedToken, SentenceDAG
 
 def parse_morfeusz_output(morfeusz_str):
     """Given the output from console printed by Morfeusz, parse it into lists of
@@ -78,9 +75,9 @@ def write_dag_from_morfeusz(path, morfeusz_nodes, append_sentence=False):
         for (node_n, node) in enumerate(morfeusz_nodes):
             for variant in node:
                 if node_n < (len(morfeusz_nodes) - 1):
-                    concraft_columns = [str(1/len(node)), '', '']
+                    concraft_columns = [str(1/len(node)), '', '', '']
                 else: # add end of sentence tag
-                    concraft_columns = [str(1/len(node)), '', 'eos']
+                    concraft_columns = [str(1/len(node)), '', 'eos', '']
                 print('\t'.join(variant + concraft_columns), file=out)
         print('', file=out) # newline
 
@@ -92,23 +89,46 @@ def parse_with_concraft(concraft_model_path, input_path):
     concraft_interp = concraft.before.decode()
     if 'concraft-pl:' in concraft_interp:
         raise RuntimeError('there was a Concraft error: {}'.format(concraft_interp))
+    print(concraft_interp)
     sents = []
-    sent_tokens = []
+    current_sent = SentenceDAG()
+    to_map, from_map = [], dict() # pairs (node/token, to_position), (from values) -> (tokens there)
     # Store the already disambiguated paths to avoid repetitions in output.
     decided_paths = []
     for line in concraft_interp.split('\n'):
-        line = line.strip()
-        fields = line.split('\t')
-        if not str(fields[0:2]) in decided_paths and re.search('disamb$', line):
-            decided_paths.append(str(fields[0:2]))
-            if len(fields) != 11:
-                raise RuntimeError('Incorrect number of columns in Concraft output - not 11 -: {}'.format(line))
-            token = ParsedToken(fields[2], fields[3], fields[4].split(':')) # split the interp into a list of tags
-            sent_tokens.append(token)
+
         if len(line.strip()) == 0: # end of sentence
-            sents.append(sent_tokens)
-            sent_tokens = []
-    sents.remove([]) # the last empty "sentence" if present
+            for token, to_position in to_map:
+                if to_position in from_map: # isn't true at the end of sentence
+                    token.forward_paths = from_map[to_position]
+            sents.append(current_sent)
+            current_sent = SentenceDAG()
+            to_map, from_map = [], dict()
+            continue
+
+        fields = line.split('\t')
+        if len(fields) != 12:
+            raise RuntimeError('Incorrect number of columns in Concraft output - {}, not 12:'
+                    ' {}'.format(len(fields), line))
+        token = ParsedToken(fields[2], fields[3], fields[4].split(':'), # split the interp into a list of tags
+                chosen=False)
+        current_sent.tokens.append(token)
+
+        from_index = fields[0]
+        to_index = fields[1]
+        to_map.append((token, to_index))
+        if not from_index in from_map:
+            from_map[from_index] = []
+        from_map[from_index].append(token)
+        if from_index == '0':
+            token.sentence_starting = True
+
+        if not str(fields[0:2]) in decided_paths and re.search('disamb$', line):
+            token.chosen = True
+            decided_paths.append(str(fields[0:2]))
+
+    if len(sents) != 0 and not sents[-1].tokens: # remove the last empty "sentence" if present
+        sents = sents[:-1]
     return sents
 
 def morfeusz_analysis(morfeusz_process, text):
@@ -121,13 +141,28 @@ def morfeusz_analysis(morfeusz_process, text):
     morfeusz_interp = morfeusz_interp[morfeusz_interp.index('['):]
     return morfeusz_interp
 
-def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=False, category_sigils=True):
-    """Use Morfeusz and Concraft to obtain the sentences as lists of ParsedToken objects"""
+def parse_sentences(sents_str, verbose=False, category_sigils=True, base_config=False):
+    """
+    Use Morfeusz and Concraft to obtain the sentences as lists of ParsedToken objects. The
+    base_config option can be used to provide a dictionary with morfeusz_model_dir, morfeusz_model
+    and concraft_models providing appropriate paths for models for these programs.
+    """
     if sents_str.strip() == '':
         raise ValueError('called parse_sentences on empty string')
+
+    if not base_config:
+        # Load the configuration.
+        with open('config.yml') as base_config_file:
+            base_config = yaml.load(base_config_file, Loader=yaml.Loader)
+
+    # Prepare the Morfeusz process.
+    morfeusz_analyzer = pexpect.spawn('morfeusz_analyzer --dict-dir {} -d {}'.format(
+        base_config['morfeusz_model_dir'], base_config['morfeusz_model']))
+    pexp_result = morfeusz_analyzer.expect(['Using dictionary: [^\\n]*$', pexpect.EOF, pexpect.TIMEOUT])
+    if pexp_result != 0:
+        raise RuntimeError('cannot run morfeusz_analyzer properly')
+
     parsed_sents = []
-    unknowns = set()
-    proper_names = set()
     parsed_boundary = 0
     chunk_size = 2500#200*115
     while len(sents_str) != parsed_boundary:
@@ -137,20 +172,12 @@ def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=Fa
             parsed_boundary = len(sents_str)
         str_chunk = sents_str[previous_parsed_boundary:parsed_boundary]
 
-        morfeusz_interp = morfeusz_analysis(morfeusz_process, str_chunk)
+        morfeusz_interp = morfeusz_analysis(morfeusz_analyzer, str_chunk)
         if verbose:
             print('Morfeusz interp is', morfeusz_interp)
         parsed_nodes = parse_morfeusz_output(morfeusz_interp)
         if verbose:
             print(len(parsed_nodes), 'parsed nodes')
-
-        if category_sigils:
-            for node_variants in parsed_nodes:
-                if len([variant for variant in node_variants if variant[4][:3] != 'ign']) == 0:
-                    unknowns.add(node_variants[0][2])
-                if len([variant for variant in node_variants
-                    if not 'nazwisko' in variant[5] and not re.search('nazwa (?!:posp)', variant[5])]) == 0:
-                    proper_names.add(node_variants[0][2])
 
         morfeusz_sentences = split_morfeusz_sents(parsed_nodes, verbose=verbose)
         if verbose:
@@ -160,17 +187,34 @@ def parse_sentences(morfeusz_process, concraft_model_path, sents_str, verbose=Fa
                 write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent)
             else:
                 write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent, append_sentence=True)
-        parsed_sents += parse_with_concraft(concraft_model_path, 'MORFEUSZ_CONCRAFT_TEMP')
+        parsed_sents += parse_with_concraft(base_config['concraft_model'], 'MORFEUSZ_CONCRAFT_TEMP')
         os.remove('MORFEUSZ_CONCRAFT_TEMP')
-    if category_sigils:
-        for si, sent in enumerate(parsed_sents):
-            for ti, token in enumerate(sent):
-                latin_lemmas = latin_lemmatizer.lookup([token.form])[0][1]
-                if (len(latin_lemmas) > 1
-                        or len([l for (l, p) in latin_lemmas if l != token.form]) > 0):
-                    parsed_sents[si][ti].latin = True
-                elif token.form in unknowns:
-                    parsed_sents[si][ti].unknown_form = True
-                if token.form in proper_names:
-                    parsed_sents[si][ti].proper_name = True
+
+    # Add the correspondence-to-string information.
+    for sent_dag in parsed_sents:
+        # Indices from which to search for the token form for the token at the given position.
+        tokens_to_index = {tok_n : 0 for tok_n, tok in enumerate(sent_dag.tokens)
+                if tok.sentence_starting}
+        for tok_n, token in enumerate(sent_dag.tokens):
+            search_start_index = tokens_to_index[tok_n]
+            token_start = search_start_index + sents_str[search_start_index:].find(token.form)
+            token.corresp_index = token_start
+            token.pause = sents_str[search_start_index:token_start]
+            for forward_token in token.forward_paths:
+                forward_n = sent_dag.tokens.index(forward_token)
+                tokens_to_index[forward_n] = token_start + len(token.form)
+
     return parsed_sents
+
+def parsed_sections(raw_sections):
+    result_sections = []
+    for sec_n, sec in enumerate(raw_sections):
+        for x in range(10):
+            if (sec_n >= ((len(raw_sections) / 10) * x)
+                    and (sec_n-1) < ((len(raw_sections) / 10) * x)):
+                info('Done {}% of parsing.'.format(x*10))
+        new_sec = copy.deepcopy(sec)
+        for par_n, (page, paragraph) in enumerate(new_sec.pages_paragraphs):
+            new_sec.pages_paragraphs[par_n] = parse_sentences(paragraph)
+        result_sections.append(new_sec)
+    return result_sections

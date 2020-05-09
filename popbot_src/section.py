@@ -2,12 +2,27 @@ import csv
 import datetime
 import io
 
-from popbot_src.load_helpers import extract_dates, fuzzy_match
+from popbot_src.load_helpers import extract_dates, fuzzy_match, join_linebreaks
 from popbot_src.parsed_token import ParsedToken
 
 def tuple_to_datetime(date_tuple):
     # this function expects the order: year, month, day (but we use the reverse)
     return datetime.date(int(date_tuple[2]), int(date_tuple[1]), int(date_tuple[0]))
+
+def transfer_pause_data(parsed_section, raw_section):
+    for par_n, (page, paragraph) in enumerate(raw_section.pages_paragraphs):
+        raw_pointer = 0
+        paragraph = join_linebreaks(paragraph)
+        for tok_n, token in enumerate(parsed_section.pages_paragraphs[par_n][1]):
+            index = paragraph[raw_pointer:].find(token.form)
+            if index == -1:
+                raise ValueError('Cannot find {} from {} in {} (from index {})'.format(
+                    token.form, [t.lemma
+                        for t in parsed_section.pages_paragraphs[par_n][1][tok_n-2:tok_n+2]],
+                    paragraph, raw_pointer))
+            token.pause = paragraph[raw_pointer:raw_pointer+index]
+            token.corresp_index = raw_pointer+index
+            raw_pointer += index
 
 # Section class template.
 class Section():
