@@ -42,7 +42,7 @@ if not args.leave_hyphens:
 # Parse the edition unless this is turned off.
 pathed_edition_sections = False
 if not args.dont_parse:
-    pathed_edition_sections = pathed_sections(edition_sections[:20])
+    pathed_edition_sections = pathed_sections(edition_sections)
 
 # Print the TEI corpus.
 write_tei_corpus(args.output_tei_path, config['tei_code'], edition_sections,

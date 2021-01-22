@@ -290,8 +290,6 @@ def tei_segmentation_sections(corp_name, pathed_sections):
                         except TypeError:
                             pass
                         real_token = real_token[-1]
-                    if '"' in real_token['orth']:
-                        print('HEJ', pos_n, position, sent)
                     # is there a space before?
                     is_after_pause = True
                     if ends and ends[-1] == offset: # no intervening space between this and previous token
@@ -323,7 +321,7 @@ def tei_morphosyntax_sections(corp_name, pathed_sections):
         token_id_counter = { 'tok_num': 1, 'corp_name': corp_name }
         tei_corp, body = tei_empty_subcorpus(name='morph', lang='pl')
         for par_num, (page, par) in enumerate(sec.pages_paragraphs):
-            # NOTE currently ignoring page breaks?
+            # TODO currently ignoring page breaks?
             tei_par = tei_paragraph_elem('morph_{}-p'.format(par_num))
             ends = [] # end offsets of each token
 ###-            chosen_entries = set([(token.position, token.form, token.lemma, ':'.join(token.interp))

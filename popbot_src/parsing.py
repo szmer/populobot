@@ -1,3 +1,4 @@
+import csv
 import copy
 from logging import info
 import os
@@ -5,46 +6,36 @@ import pexpect
 import re
 import yaml
 
+from morfeusz2 import Morfeusz
+
 from popbot_src.parsed_token import ParsedToken
 from popbot_src.MAGIC import Analyse
 
-def parse_morfeusz_output(morfeusz_str):
-    """Given the output from console printed by Morfeusz, parse it into lists of
-    lists of possible interpretations for each recognized node."""
-    # replace unwieldy special characters to make parsing reliable
-    morfeusz_str = re.sub(',,', ',MORFEUSZ_COMMA', morfeusz_str)
-    morfeusz_str = re.sub('\\.,', 'MORFEUSZ_DOT,', morfeusz_str)
+def stringify_value(value):
+    if value != 0 and not value:
+        return ''
+    return str(value)
 
-    sections = morfeusz_str.split(']\r\n[') # pexpect uses \r\n style newlines
-    sections[0] = sections[0].strip()[1:] # remove the first and last bracket
-    sections[-1] = sections[-1].strip()[:-1]
+def merge_morfeusz_variants(morfeusz_output, stringify_values=True):
+    """
+    With output from the Morfeusz Python binding, transform the tuples of (start_node, end_node, (interp...))
+    into lists of nodes of [(start_node, end_node, interp...), ...], merging variants of the same
+    start-end position into one list each.
+    """
+    positions_lists = dict() # start_end -> ready lists
+    for node_n, node in enumerate(morfeusz_output):
+        key = '{}_{}'.format(node[0], node[1])
+        if not key in positions_lists:
+            positions_lists[key] = []
+        variant_list = list((node[0], node[1]) + node[2]) # form one list
+        if stringify_values:
+            variant_list = [stringify_value(val) for val in variant_list]
+        positions_lists[key].append(variant_list)
 
-    parsed_sections = []
-    for sec in sections: # (per graph path, which can have some alternatives inside)
-        nodes = [node.split(',') for node in sec.split('\n')]
-        parsed_nodes = []
-        for (node_n, items) in enumerate(nodes): # 'natively-printed' Morfeusz options for this graph path
-            clean_items = [re.sub('^_$', '', item.strip().strip('[]').replace('MORFEUSZ_COMMA', ','))
-                                    for item in items]
-            clean_items[2] = clean_items[2].replace('MORFEUSZ_DOT', '.') # form and lemma
-            clean_items[3] = clean_items[3].replace('MORFEUSZ_DOT', '.')
-            if len(clean_items) > 7: # some wild commas, just fake the node with something inoffensive
-                clean_items = clean_items[0:2] + ['_', '_', 'ign', '', '']
-            assembled_alternatives = []
-            for (pos_n, alts) in enumerate(clean_items[4].split(':')):
-                new_alternatives = []
-                alts = alts.split('.')
-                for alt in alts:
-                    if pos_n == 0:
-                        new_alternatives.append(alt)
-                    else:
-                        for prev_alt in assembled_alternatives:
-                            new_alternatives.append(prev_alt+':'+alt)
-                assembled_alternatives = new_alternatives
-            for tag in assembled_alternatives:
-                parsed_nodes.append(clean_items[:4] + [ tag ] + clean_items[5:])
-        parsed_sections.append(parsed_nodes)
-    return parsed_sections
+    def position_sorter(key):
+        start, end = tuple(key.split('_'))
+        return int(start)*1000 + int(end)
+    return [item[1] for item in sorted(positions_lists.items(), key=lambda item: position_sorter(item[0]))]
 
 def split_morfeusz_sents(morfeusz_nodes, verbose=False):
     """Given an output from parse_morfeusz_output, return it as a list of sentences."""
@@ -73,13 +64,14 @@ def write_dag_from_morfeusz(path, morfeusz_nodes, append_sentence=False):
     """Write the Morfeusz output graph (DAG) to a file, where it can be read from by Concraft"""
     open_settings = 'a' if append_sentence else 'w+'
     with open(path, open_settings, encoding='utf-8') as out:
+        writer = csv.writer(out, dialect='excel', delimiter='\t')
         for (node_n, node) in enumerate(morfeusz_nodes):
             for variant in node:
                 if node_n < (len(morfeusz_nodes) - 1):
                     concraft_columns = [str(1/len(node)), '', '', '']
                 else: # add end of sentence tag
                     concraft_columns = [str(1/len(node)), '', 'eos', '']
-                print('\t'.join(variant + concraft_columns), file=out)
+                writer.writerow(variant + concraft_columns)
         print('', file=out) # newline
 
 def parse_with_concraft(concraft_model_path, input_path):
@@ -138,26 +130,14 @@ def parse_with_concraft(concraft_model_path, input_path):
         sents = sents[:-1]
     return sents
 
-def morfeusz_analysis(morfeusz_process, text):
-    # Square brackets can mess up parse detection in output. Quote chars need to be escaped.
-    text = text.replace('\n', ' ').replace('[', '🧐').replace(']', '🥸').replace('"', '\\"').replace('\'', '\\\'')
-    # The $'...' syntax uses escape sequences.
-    morfeusz_process.send('{} KONIECKONIEC\n'.format(text))
-    pexp_result = morfeusz_process.expect(['\r\n\\[\\d+,\\d+,KONIECKONIEC,KONIECKONIEC,ign,_,_\\]\r\n',
-        pexpect.EOF, pexpect.TIMEOUT], timeout=10*60)
-    if pexp_result != 0 and pexp_result != 2: # 2 is "misuse of Shell builtins"
-        raise RuntimeError('there was a Morfeusz error (exit code {}): {}'.format(pexp_result, morfeusz_process.before))
-    morfeusz_interp = morfeusz_process.before.decode().strip() # encode from bytes into str, strip whitespace
-    morfeusz_interp = morfeusz_interp[morfeusz_interp.index('['):].replace('🧐', '[').replace('🥸', ']')
-    return morfeusz_interp
-
 def tokens_paths(sents_str, base_config=False):
     """
     Return sentences as lists of token dictionaries extracted from the Morfeusz analysis. These dictionaries
     should also contain numbers of the tokens' positions in the sentence's direct acyclic graph.
     """
     if sents_str.strip() == '':
-        raise ValueError('called parse_sentences on empty string')
+        return []
+        ##raise ValueError('called parse_sentences on empty string')
 
     if not base_config:
         # Load the configuration.
@@ -165,12 +145,9 @@ def tokens_paths(sents_str, base_config=False):
             base_config = yaml.load(base_config_file, Loader=yaml.Loader)
 
     # Prepare the Morfeusz process.
-    morfeusz_analyzer = pexpect.spawn('morfeusz_analyzer --dict-dir {} -d {}'.format(
-        base_config['morfeusz_model_dir'], base_config['morfeusz_model']))
-    morfeusz_analyzer.delaybeforesend = None # don't make sending horrifyingly slow
-    pexp_result = morfeusz_analyzer.expect(['Using dictionary: [^\\n]*$', pexpect.EOF, pexpect.TIMEOUT])
-    if pexp_result != 0:
-        raise RuntimeError('cannot run morfeusz_analyzer properly')
+    morfeusz_analyzer = Morfeusz(dict_path=base_config['morfeusz_model_dir'],
+            dict_name=base_config['morfeusz_model'],
+            generate=False)
 
     path_analyzer = Analyse(base_config['morfeusz_model_dir'], base_config['morfeusz_model'])
     pathed_sentences = []
@@ -184,9 +161,8 @@ def tokens_paths(sents_str, base_config=False):
             parsed_boundary = len(sents_str)
         str_chunk = sents_str[previous_parsed_boundary:parsed_boundary]
 
-        morfeusz_interp = morfeusz_analysis(morfeusz_analyzer, str_chunk)
-        parsed_nodes = parse_morfeusz_output(morfeusz_interp)
-
+        parsed_nodes = morfeusz_analyzer.analyse(str_chunk)
+        parsed_nodes = merge_morfeusz_variants(parsed_nodes)
         morfeusz_sentences = split_morfeusz_sents(parsed_nodes)
         for sent_n, morf_sent in enumerate(morfeusz_sentences):
             if sent_n == 0:
@@ -225,11 +201,9 @@ def parse_sentences(sents_str, verbose=False, category_sigils=True, base_config=
             base_config = yaml.load(base_config_file, Loader=yaml.Loader)
 
     # Prepare the Morfeusz process.
-    morfeusz_analyzer = pexpect.spawn('morfeusz_analyzer --dict-dir {} -d {}'.format(
-        base_config['morfeusz_model_dir'], base_config['morfeusz_model']))
-    pexp_result = morfeusz_analyzer.expect(['Using dictionary: [^\\n]*$', pexpect.EOF, pexpect.TIMEOUT])
-    if pexp_result != 0:
-        raise RuntimeError('cannot run morfeusz_analyzer properly')
+    morfeusz_analyzer = Morfeusz(dict_path=base_config['morfeusz_model_dir'],
+            dict_name=base_config['morfeusz_model'],
+            generate=False)
 
     parsed_sents = []
     parsed_boundary = 0 # track where we left the parsing after the previous chunk
@@ -241,13 +215,11 @@ def parse_sentences(sents_str, verbose=False, category_sigils=True, base_config=
             parsed_boundary = len(sents_str)
         str_chunk = sents_str[previous_parsed_boundary:parsed_boundary]
 
-        morfeusz_interp = morfeusz_analysis(morfeusz_analyzer, str_chunk)
-        if verbose:
-            print('Morfeusz interp is', morfeusz_interp)
-        parsed_nodes = parse_morfeusz_output(morfeusz_interp)
+        parsed_nodes = morfeusz_analyzer.analyse(str_chunk)
         if verbose:
             print(len(parsed_nodes), 'parsed nodes')
 
+        parsed_nodes = merge_morfeusz_variants(parsed_nodes)
         morfeusz_sentences = split_morfeusz_sents(parsed_nodes, verbose=verbose)
         if verbose:
             print('Morfeusz sentences,', len(morfeusz_sentences), ':', morfeusz_sentences)
