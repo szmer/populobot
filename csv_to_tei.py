@@ -5,7 +5,7 @@ import sys
 
 from popbot_src.load_helpers import join_linebreaks
 from popbot_src.indexing_common import load_indexed
-from popbot_src.parsing import parsed_sections
+from popbot_src.parsing import pathed_sections
 from popbot_src.tei import write_tei_corpus
 
 logging.basicConfig(
@@ -14,8 +14,10 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S')
 
 argparser = argparse.ArgumentParser()
-argparser.add_argument('output_tei_path')
-argparser.add_argument('config_file_path')
+argparser.add_argument('output_tei_path', help='Name of a catalog of TEI corpora when the corpus'
+        'will be places. This path will be created if does not exist.')
+argparser.add_argument('config_file_path', help='The config file describing where to find the corpus'
+        ' and its metadata.')
 argparser.add_argument('raw_csv_path', help='The csv file containing the loaded edition with no'
         ' further processing.')
 argparser.add_argument('--leave_hyphens', action='store_true',
@@ -35,13 +37,13 @@ with open(args.config_file_path) as config_file:
 if not args.leave_hyphens:
     for sec in edition_sections:
         for par_n, (page, paragraph) in enumerate(sec.pages_paragraphs):
-            sec.pages_paragraphs[par_n] = join_linebreaks(paragraph)
+            sec.pages_paragraphs[par_n] = (page, join_linebreaks(paragraph).strip()) # also trim whitespace
 
 # Parse the edition unless this is turned off.
-parsed_edition_sections = False
+pathed_edition_sections = False
 if not args.dont_parse:
-    parsed_edition_sections = parsed_sections(edition_sections)
+    pathed_edition_sections = pathed_sections(edition_sections[:20])
 
 # Print the TEI corpus.
-write_tei_corpus(args.output_tei_path, config['book_title'].replace(' ', '_'), edition_sections,
-        parsed_sections=parsed_sections)
+write_tei_corpus(args.output_tei_path, config['tei_code'], edition_sections,
+        pathed_sections=pathed_edition_sections)

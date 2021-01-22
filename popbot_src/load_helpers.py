@@ -242,7 +242,7 @@ def extract_dates(string, verbose=False):
             continue
         if verbose:
             print('{} - day number'.format(day_number))
-            print('Date found: {}'.format(day_number, month_number, year_number))
+            print('Date found: {} {} {}'.format(day_number, month_number, year_number))
 
         try:
             datetime.date(year_number, month_number, day_number)

@@ -5,7 +5,8 @@ import pexpect
 import re
 import yaml
 
-from popbot_src.parsed_token import ParsedToken, SentenceDAG
+from popbot_src.parsed_token import ParsedToken
+from popbot_src.MAGIC import Analyse
 
 def parse_morfeusz_output(morfeusz_str):
     """Given the output from console printed by Morfeusz, parse it into lists of
@@ -83,36 +84,44 @@ def write_dag_from_morfeusz(path, morfeusz_nodes, append_sentence=False):
 
 def parse_with_concraft(concraft_model_path, input_path):
     concraft = pexpect.spawn('concraft-pl tag -i {} {}'.format(input_path, concraft_model_path))
+    concraft.delaybeforesend = None
     pexp_result = concraft.expect([pexpect.EOF, pexpect.TIMEOUT])
     if pexp_result != 0:
         raise RuntimeError('there was a Concraft timeout: {}'.format(concraft.before))
     concraft_interp = concraft.before.decode()
     if 'concraft-pl:' in concraft_interp:
         raise RuntimeError('there was a Concraft error: {}'.format(concraft_interp))
-    print(concraft_interp)
     sents = []
-    current_sent = SentenceDAG()
+    current_sent_tokens = []
     to_map, from_map = [], dict() # pairs (node/token, to_position), (from values) -> (tokens there)
     # Store the already disambiguated paths to avoid repetitions in output.
     decided_paths = []
-    for line in concraft_interp.split('\n'):
+    lines = concraft_interp.split('\n')
+    lines_fields = [line.split('\t') for line in lines]
+    sent_start_index = min([int(fields[0]) for fields in lines_fields if len(fields) == 12])
+    for line_n, fields in enumerate(lines_fields):
 
-        if len(line.strip()) == 0: # end of sentence
+        if len(lines[line_n].strip()) == 0: # end of sentence
             for token, to_position in to_map:
                 if to_position in from_map: # isn't true at the end of sentence
                     token.forward_paths = from_map[to_position]
-            sents.append(current_sent)
-            current_sent = SentenceDAG()
+            sents.append(current_sent_tokens)
+            current_sent_tokens = []
             to_map, from_map = [], dict()
+            # Update the start index.
+            if len(lines_fields[line_n+1:]) > 1:
+                sent_start_index = min([int(fields[0]) for fields
+                    in lines_fields[line_n+1:] if len(fields) == 12])
             continue
 
-        fields = line.split('\t')
         if len(fields) != 12:
             raise RuntimeError('Incorrect number of columns in Concraft output - {}, not 12:'
-                    ' {}'.format(len(fields), line))
+                    ' {}'.format(len(fields), lines[line_n]))
+        if str(fields[0:2]) in decided_paths or not re.search('disamb\\r$', lines[line_n]):
+            continue
         token = ParsedToken(fields[2], fields[3], fields[4].split(':'), # split the interp into a list of tags
-                chosen=False)
-        current_sent.tokens.append(token)
+                position=int(fields[0]))
+        current_sent_tokens.append(token)
 
         from_index = fields[0]
         to_index = fields[1]
@@ -120,26 +129,86 @@ def parse_with_concraft(concraft_model_path, input_path):
         if not from_index in from_map:
             from_map[from_index] = []
         from_map[from_index].append(token)
-        if from_index == '0':
+        if int(from_index) == sent_start_index:
             token.sentence_starting = True
 
-        if not str(fields[0:2]) in decided_paths and re.search('disamb$', line):
-            token.chosen = True
-            decided_paths.append(str(fields[0:2]))
+        decided_paths.append(str(fields[0:2]))
 
-    if len(sents) != 0 and not sents[-1].tokens: # remove the last empty "sentence" if present
+    if len(sents) != 0 and not sents[-1]: # remove the last empty "sentence" if present
         sents = sents[:-1]
     return sents
 
 def morfeusz_analysis(morfeusz_process, text):
-    text = text.replace('\n', ' ').replace('[', '(').replace(']', ')') # square brackets can mess up parse detection in output
-    morfeusz_process.send(text+' KONIECKONIEC\n')
-    pexp_result = morfeusz_process.expect(['\r\n\\[\\d+,\\d+,KONIECKONIEC,KONIECKONIEC,ign,_,_\\]\r\n', pexpect.EOF, pexpect.TIMEOUT], timeout=10*60)
-    if pexp_result != 0:
-        raise RuntimeError('there was a Morfeusz error: {}'.format(morfeusz_process.before))
+    # Square brackets can mess up parse detection in output. Quote chars need to be escaped.
+    text = text.replace('\n', ' ').replace('[', '🧐').replace(']', '🥸').replace('"', '\\"').replace('\'', '\\\'')
+    # The $'...' syntax uses escape sequences.
+    morfeusz_process.send('{} KONIECKONIEC\n'.format(text))
+    pexp_result = morfeusz_process.expect(['\r\n\\[\\d+,\\d+,KONIECKONIEC,KONIECKONIEC,ign,_,_\\]\r\n',
+        pexpect.EOF, pexpect.TIMEOUT], timeout=10*60)
+    if pexp_result != 0 and pexp_result != 2: # 2 is "misuse of Shell builtins"
+        raise RuntimeError('there was a Morfeusz error (exit code {}): {}'.format(pexp_result, morfeusz_process.before))
     morfeusz_interp = morfeusz_process.before.decode().strip() # encode from bytes into str, strip whitespace
-    morfeusz_interp = morfeusz_interp[morfeusz_interp.index('['):]
+    morfeusz_interp = morfeusz_interp[morfeusz_interp.index('['):].replace('🧐', '[').replace('🥸', ']')
     return morfeusz_interp
+
+def tokens_paths(sents_str, base_config=False):
+    """
+    Return sentences as lists of token dictionaries extracted from the Morfeusz analysis. These dictionaries
+    should also contain numbers of the tokens' positions in the sentence's direct acyclic graph.
+    """
+    if sents_str.strip() == '':
+        raise ValueError('called parse_sentences on empty string')
+
+    if not base_config:
+        # Load the configuration.
+        with open('config.yml') as base_config_file:
+            base_config = yaml.load(base_config_file, Loader=yaml.Loader)
+
+    # Prepare the Morfeusz process.
+    morfeusz_analyzer = pexpect.spawn('morfeusz_analyzer --dict-dir {} -d {}'.format(
+        base_config['morfeusz_model_dir'], base_config['morfeusz_model']))
+    morfeusz_analyzer.delaybeforesend = None # don't make sending horrifyingly slow
+    pexp_result = morfeusz_analyzer.expect(['Using dictionary: [^\\n]*$', pexpect.EOF, pexpect.TIMEOUT])
+    if pexp_result != 0:
+        raise RuntimeError('cannot run morfeusz_analyzer properly')
+
+    path_analyzer = Analyse(base_config['morfeusz_model_dir'], base_config['morfeusz_model'])
+    pathed_sentences = []
+
+    parsed_boundary = 0 # track where we left the parsing after the previous chunk
+    chunk_size = 2500#200*115
+    while len(sents_str) != parsed_boundary:
+        previous_parsed_boundary = parsed_boundary
+        parsed_boundary = sents_str[:parsed_boundary+chunk_size].rfind(' ')
+        if parsed_boundary == -1 or previous_parsed_boundary+chunk_size >= len(sents_str):
+            parsed_boundary = len(sents_str)
+        str_chunk = sents_str[previous_parsed_boundary:parsed_boundary]
+
+        morfeusz_interp = morfeusz_analysis(morfeusz_analyzer, str_chunk)
+        parsed_nodes = parse_morfeusz_output(morfeusz_interp)
+
+        morfeusz_sentences = split_morfeusz_sents(parsed_nodes)
+        for sent_n, morf_sent in enumerate(morfeusz_sentences):
+            if sent_n == 0:
+                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent)
+            else:
+                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent, append_sentence=True)
+        # Get a list of token postions with their interps.
+        tokens_interps = path_analyzer.text_analyse('MORFEUSZ_CONCRAFT_TEMP', sents_str)
+        # Extract sentences from the tokens_interps.
+        sent_counter = 0
+        sent_start = 0
+        for tok_n, token in enumerate(tokens_interps):
+            real_token = token # extract some real token from the dictionary of alternate interps
+            while type(real_token) != dict:
+                real_token = real_token[0]
+            if tok_n == len(tokens_interps) or real_token['end'] == int(morfeusz_sentences[sent_counter][-1][0][1]):
+                pathed_sentences.append(tokens_interps[sent_start:tok_n+1])
+                sent_start = tok_n+1
+                sent_counter += 1
+        os.remove('MORFEUSZ_CONCRAFT_TEMP')
+
+    return pathed_sentences
 
 def parse_sentences(sents_str, verbose=False, category_sigils=True, base_config=False):
     """
@@ -163,7 +232,7 @@ def parse_sentences(sents_str, verbose=False, category_sigils=True, base_config=
         raise RuntimeError('cannot run morfeusz_analyzer properly')
 
     parsed_sents = []
-    parsed_boundary = 0
+    parsed_boundary = 0 # track where we left the parsing after the previous chunk
     chunk_size = 2500#200*115
     while len(sents_str) != parsed_boundary:
         previous_parsed_boundary = parsed_boundary
@@ -190,20 +259,6 @@ def parse_sentences(sents_str, verbose=False, category_sigils=True, base_config=
         parsed_sents += parse_with_concraft(base_config['concraft_model'], 'MORFEUSZ_CONCRAFT_TEMP')
         os.remove('MORFEUSZ_CONCRAFT_TEMP')
 
-    # Add the correspondence-to-string information.
-    for sent_dag in parsed_sents:
-        # Indices from which to search for the token form for the token at the given position.
-        tokens_to_index = {tok_n : 0 for tok_n, tok in enumerate(sent_dag.tokens)
-                if tok.sentence_starting}
-        for tok_n, token in enumerate(sent_dag.tokens):
-            search_start_index = tokens_to_index[tok_n]
-            token_start = search_start_index + sents_str[search_start_index:].find(token.form)
-            token.corresp_index = token_start
-            token.pause = sents_str[search_start_index:token_start]
-            for forward_token in token.forward_paths:
-                forward_n = sent_dag.tokens.index(forward_token)
-                tokens_to_index[forward_n] = token_start + len(token.form)
-
     return parsed_sents
 
 def parsed_sections(raw_sections):
@@ -215,6 +270,19 @@ def parsed_sections(raw_sections):
                 info('Done {}% of parsing.'.format(x*10))
         new_sec = copy.deepcopy(sec)
         for par_n, (page, paragraph) in enumerate(new_sec.pages_paragraphs):
-            new_sec.pages_paragraphs[par_n] = parse_sentences(paragraph)
+            new_sec.pages_paragraphs[par_n] = (page, parse_sentences(paragraph))
+        result_sections.append(new_sec)
+    return result_sections
+
+def pathed_sections(raw_sections):
+    result_sections = []
+    for sec_n, sec in enumerate(raw_sections):
+        for x in range(10):
+            if (sec_n >= ((len(raw_sections) / 10) * x)
+                    and (sec_n-1) < ((len(raw_sections) / 10) * x)):
+                info('Done {}% of parsing.'.format(x*10))
+        new_sec = copy.deepcopy(sec)
+        for par_n, (page, paragraph) in enumerate(new_sec.pages_paragraphs):
+            new_sec.pages_paragraphs[par_n] = (page, tokens_paths(paragraph))
         result_sections.append(new_sec)
     return result_sections

@@ -1,8 +1,6 @@
 import os
 import lxml.etree as ET
 
-from popbot_src.parsed_token import ParsedToken
-
 nsmap = {
         'xi': 'http://www.w3.org/2001/XInclude',
         'nkjp': 'http://www.nkjp.pl/ns/1.0',
@@ -10,21 +8,122 @@ nsmap = {
         None: 'http://www.tei-c.org/ns/1.0'
         }
 
-def tei_segment_elem(id, token : ParsedToken, raw_parent_id):
+def tei_segm_segment_elem(id, form, offset, after_pause, raw_parent_id):
     """
     Make a segment element for ann_segmentation.xml. Corresp_ attributes point to the raw paragraph
     element id and the substring inside it corresponding to the segment.
     """
     segment = ET.Element('seg', {
         '{'+nsmap['xml']+'}id': id,
-        'corresp': 'text.xml#string-range({},{},{})'.format(raw_parent_id, token.corresp_index,
-            len(token.form))})
-    if not token.pause:
-        segment.attr['{'+nsmap['nkjp']+'}nps'] = 'true' # no space before the token
+        'corresp': 'text.xml#string-range({},{},{})'.format(raw_parent_id, offset,
+            len(form))})
+    if not after_pause:
+        segment.attrib['{'+nsmap['nkjp']+'}nps'] = 'true' # no space before the token
     # Inform of the form for convenience.
     w = ET.SubElement(segment, 'w')
-    w.text = token.form
+    w.text = form
     return segment
+
+def tei_morphos_segment_elem(token_id_counter, position, after_pause):
+    """
+    Make a segment element for ann_morphosyntax.xml.
+    """
+    segment = ET.Element('seg', {
+        '{'+nsmap['xml']+'}id': 'morph_1.{}-seg'.format(token_id_counter['tok_num']),
+        'corresp': 'ann_segmentation.xml#segm_1.{}-seg'.format(token_id_counter['tok_num'])})
+    fs = ET.SubElement(segment, 'fs', { 'type': 'morph' })
+    if not after_pause: # no space before the token
+        f = ET.SubElement(fs, 'f', { 'name': 'nps' })
+        ET.SubElement(f, 'binary', { 'value': 'true' })
+    f = ET.SubElement(fs, 'f', { 'name': 'orth' })
+    text = ET.SubElement(f, 'string')
+    text.text = position['orth']
+    interps = ET.SubElement(fs, 'f', { 'name': 'interps' })
+    previous_msd = False # reduce duplication by merging same lemmas and pos
+    for interp_n, interp in enumerate(position['interps']):
+        if (previous_msd # avoiding duplicate fs differing only in msd
+                and position['interps'][interp_n-1]['base'] == interp['base']
+                and position['interps'][interp_n-1]['ctag'] == interp['ctag']):
+            # See if a disambiguation entry is related to this interpratation.
+###-            if (position['start'], position['orth'], interp['base'],
+###-                    # construct the one interp tag string:
+###-                    interp['ctag']+(':'+interp['msd'] if interp['msd'] else '')) in chosen_entries:
+###-                f = ET.SubElement(fs, 'f', { 'name': 'disamb' })
+###-                disamb_fs = ET.SubElement(f, 'fs', { 'type': 'tool_report' })
+###-                ET.SubElement(disamb_fs, 'f', {
+###-                    'name': 'choice',
+###-                    'fVal': 'morph_1.{}.{}.1-msd'.format(token_id_counter['tok_num'],
+###-                        interp_n+1),
+###-                    })
+###-                disamb_interp_f = ET.SubElement(disamb_fs, 'f', { 'name': 'interpretation' })
+###-                disamb_interp_string = ET.SubElement(disamb_interp_f, 'string')
+###-                disamb_interp_string.text = '{}:{}'.format(interp['base'], interp['ctag'])+(
+###-                        ':'+interp['msd'] if interp['msd'] else '')
+            # Avoid duplication on only msd differing.
+            if previous_msd.tag == 'f':
+                parent = previous_msd.getparent()
+                parent.remove(previous_msd)
+                valt = ET.SubElement(parent, 'vAlt')
+                ET.SubElement(valt, 'symbol', { # re-add the previous msd
+                    '{'+nsmap['xml']+'}id': 'morph_1.{}.{}.1-msd'.format(token_id_counter['tok_num'],
+                        interp_n),
+                    'value': position['interps'][interp_n-1]['msd']
+                    })
+                ET.SubElement(valt, 'symbol', {
+                    '{'+nsmap['xml']+'}id': 'morph_1.{}.{}.1-msd'.format(token_id_counter['tok_num'],
+                        interp_n+1),
+                    'value': interp['msd']
+                    })
+                previous_msd = valt
+            else:
+                ET.SubElement(valt, 'symbol', {
+                    '{'+nsmap['xml']+'}id': 'morph_1.{}.{}.1-msd'.format(token_id_counter['tok_num'],
+                        interp_n+1),
+                    'value': interp['msd']
+                    })
+            continue
+        interp_f_list = ET.SubElement(interps, 'fs', {
+            '{'+nsmap['xml']+'}id': 'morph_1.{}.{}-lex'.format(token_id_counter['tok_num'],
+                interp_n+1),
+            'type': 'lex',
+            })
+        f = ET.SubElement(interp_f_list, 'f', { 'name': 'base' })
+        lemma = ET.SubElement(f, 'string')
+        lemma.text = interp['base']
+        f = ET.SubElement(interp_f_list, 'f', { 'name': 'ctag' })
+        pos = ET.SubElement(f, 'string')
+        pos.text = interp['ctag']
+        f = ET.SubElement(interp_f_list, 'f', { 'name': 'msd' })
+        ET.SubElement(f, 'symbol', {
+            '{'+nsmap['xml']+'}id': 'morph_1.{}.{}.1-msd'.format(token_id_counter['tok_num'],
+                interp_n+1),
+            'value': interp['msd']
+            })
+        previous_msd = f
+    token_id_counter['tok_num'] += 1
+    return segment
+
+def tei_simple_choice_elem(position, after_pause, tokens_id_counter, raw_parent_id):
+    choice = ET.Element('choice')
+    for interp in position['interps']:
+        seg = tei_segm_segment_elem(segment_id(tokens_id_counter), position['orth'], position['offset'],
+                after_pause, raw_parent_id)
+        choice.append(seg)
+    return choice
+
+def tei_parenthesis_choice_elem(position_options, after_pause, tokens_id_counter, raw_parent_id):
+    choice = ET.Element('choice')
+    for option in position_options:
+        paren = ET.SubElement(choice, '{'+nsmap['nkjp']+'}paren')
+        for tok_n, token in enumerate(option):
+            seg = tei_segm_segment_elem(segment_id(tokens_id_counter), token['orth'], token['offset'],
+                    # is the token after a pause/space?
+                    after_pause if tok_n == 0 # (the first token)
+                    else (option[tok_n-1]['offset']+len(option[tok_n-1]['orth'])) != token['offset'],
+                    raw_parent_id)
+            paren.append(seg)
+        choice.append(paren)
+    return choice
 
 def tei_sentence_elem(id, break_page=False):
     """
@@ -72,13 +171,21 @@ def tei_raw_note(id, text):
     note.text = text
     return note
 
-def tei_empty_subcorpus():
+def tei_empty_subcorpus(name=False, lang=False):
     tei_corp = ET.Element('teiCorpus', nsmap=nsmap)
     # TODO include the global header
     tei = ET.SubElement(tei_corp, 'TEI')
     ET.SubElement(tei, '{'+nsmap['xi']+'}include', {'href': 'header.xml'})
-    text = ET.SubElement(tei, 'text')
-    body = ET.SubElement(text, 'body')
+    attrs = {}
+    if name:
+        attrs['{'+nsmap['xml']+'}id'] = name + '_text'
+    if lang:
+        attrs['{'+nsmap['xml']+'}lang'] = lang
+    text = ET.SubElement(tei, 'text', attrs)
+    attrs = {}
+    if name:
+        attrs['{'+nsmap['xml']+'}id'] = name + '_body'
+    body = ET.SubElement(text, 'body', attrs)
     return tei_corp, body
 
 def tei_raw_corpus(corp_name, sections):
@@ -86,11 +193,11 @@ def tei_raw_corpus(corp_name, sections):
     A list of pairs: (main XML of the document, the header XML).
     """
     doc_pairs = []
-    note_num = 0
-    par_num = 0
     # TODO we need to adjust the page numbers here with the ones in editions!
     previous_page = 0
     for sec in sections:
+        note_num = 1
+        par_num = 1
         tei_corp, body = tei_empty_subcorpus()
         # the document header
         header = ET.Element('teiHeader', nsmap=nsmap)
@@ -112,16 +219,16 @@ def tei_raw_corpus(corp_name, sections):
         # TODO the remaining biblio information - from config?
         if sec.section_type == 'meta':
             # the header information
-            header.attrib['{'+nsmap['xml']+'}id'] = '{}-note-{}'.format(corp_name, note_num)
+            header.attrib['{'+nsmap['xml']+'}id'] = 'note_{}'.format(note_num)
             header_title.text = 'TEI P5 encoded version of note no {}'.format(note_num)
             # the local subcorpus information
-            body.append(tei_raw_note('{}-notebody-{}'.format(corp_name, note_num),
+            body.append(tei_raw_note('notebody_{}'.format(note_num),
                 sec.pages_paragraphs[0][1]))
             note_num += 1
         if sec.section_type == 'document':
             title = sec.pages_paragraphs[0][1]
             # the header information
-            header.attrib['{'+nsmap['xml']+'}id'] = '{}-doc-{}'.format(corp_name,
+            header.attrib['{'+nsmap['xml']+'}id'] = '{}-{}'.format(corp_name,
                     sec.inbook_document_id)
             header_title.text = 'TEI P5 encoded version of "{}"'.format(title)
             bibl_title = ET.SubElement(bibl, 'title', {'level': 'a'})
@@ -133,11 +240,12 @@ def tei_raw_corpus(corp_name, sections):
                 if page != previous_page:
                     previous_page = page
                     break_page = page
-                tei_par = tei_raw_paragraph('{}-par-{}'.format(corp_name, par_num),
+                # NOTE We hardcode 1 in these ids, since each file contains one text
+                tei_par = tei_raw_paragraph('txt_1.{}-ab'.format(par_num),
                         par, break_page=break_page)
                 tei_pars.append(tei_par)
                 par_num += 1
-            doc = tei_raw_document('{}-doc-{}'.format(corp_name, sec.inbook_document_id),
+            doc = tei_raw_document('txt_{}-div'.format(sec.inbook_document_id),
                     tei_pars, title=title, type=
                     # TODO we need this to be more fine-grained
                     ('document-sejmik-resolution' if sec.pertinence else 'document-other'))
@@ -145,39 +253,132 @@ def tei_raw_corpus(corp_name, sections):
         doc_pairs.append((tei_corp, header))
     return doc_pairs
 
-def tei_segmentation_sections(corp_name, parsed_sections):
+def segment_id(token_counter):
+    token_counter['tok_num'] += 1
+    return 'segm_1.{}-seg'.format(token_counter['tok_num'])
+
+def tei_segmentation_sections(corp_name, pathed_sections):
+    """
+    Given an arbitrary corpus name as a string and parsed sections (page-number, paragraph tuples),
+    generate a XML represantation for corpus' segmentation.
+    """
     tei_corps = []
-    par_num = 0
-    segm_num = 0
-    for sec in parsed_sections:
-        tei_corp, body = tei_empty_subcorpus()
-        # NOTE no segmentation data for "meta" note sections
-        if sec.section_type == 'document':
-            tei_pars = []
-            for page, par in sec.pages_paragraphs[1:]:
-                # NOTE currently ignoring page breaks?
-                tei_par = tei_paragraph_elem('{}-segm-par-{}'.format(corp_name, par_num))
-                raw_par_id = '{}-par-{}'.format(corp_name, par_num)
-                # NOTE we currently treat the whole paragraph as one sentence.
-                tei_sent = tei_sentence_elem('{}-segm-sent-{}'.format(corp_name, par_num))
+
+    for sec in pathed_sections:
+        par_num = 1
+        sent_num = 1
+        token_id_counter = { 'tok_num': 0, 'corp_name': corp_name }
+        tei_corp, body = tei_empty_subcorpus(name='segm', lang='pl')
+        for page, par in sec.pages_paragraphs:
+            # NOTE currently ignoring page breaks?
+            tei_par = tei_paragraph_elem('segm_{}-p'.format(par_num))
+            raw_par_id = 'segm_1.{}-ab'.format(par_num)
+            ends = [] # end offsets of each token
+            for sent in par:
+                tei_sent = tei_sentence_elem('segm_{}.{}-s'.format(par_num, sent_num))
                 tei_par.append(tei_sent)
-                for token in par:
-                    tei_seg = tei_segment_elem('{}-segm-seg-{}'.format(corp_name, segm_num),
-                            token, raw_par_id)
-                    tei_sent.append(tei_seg)
-                    segm_num += 1
-                tei_pars.append(tei_par)
-                par_num += 1
+                for pos_n, position in enumerate(sent):
+                    real_token = position # if it's a list, we'll have to dig to the dicts
+                    end = 0
+                    if type(real_token) == dict:
+                        offset = real_token['offset']
+                        end = offset + len(real_token['orth'])
+                    while type(real_token) != dict:
+                        try:
+                            offset = real_token[0]['offset']
+                            end = offset + sum([len(segm['orth'] for segm in real_token)])
+                        except TypeError:
+                            pass
+                        real_token = real_token[-1]
+                    if '"' in real_token['orth']:
+                        print('HEJ', pos_n, position, sent)
+                    # is there a space before?
+                    is_after_pause = True
+                    if ends and ends[-1] == offset: # no intervening space between this and previous token
+                        is_after_pause = False
+                    ends.append(end)
+                    if type(position) == dict:
+                        tei_seg = tei_segm_segment_elem(segment_id(token_id_counter),
+                                position['orth'], position['offset'], is_after_pause,
+                                raw_par_id)
+                        tei_sent.append(tei_seg)
+                    else: # a list of alternative paths throught the sentence graph positions
+                        tei_choice = tei_parenthesis_choice_elem(position, is_after_pause,
+                                token_id_counter, raw_par_id)
+                        tei_sent.append(tei_choice)
+                sent_num += 1
+            body.append(tei_par)
+            par_num += 1
         tei_corps.append(tei_corp)
     return tei_corps
 
-def write_tei_corpus(output_path, corp_name, sections, parsed_sections):
+def tei_morphosyntax_sections(corp_name, pathed_sections):
+    tei_corps = []
+
+    #for sec, disamb_sec in zip(pathed_sections, parsed_sections):
+    for sec in pathed_sections:
+        par_num = 1
+        sent_num = 1
+        # here start from 1, because we increment after assigning the number
+        token_id_counter = { 'tok_num': 1, 'corp_name': corp_name }
+        tei_corp, body = tei_empty_subcorpus(name='morph', lang='pl')
+        for par_num, (page, par) in enumerate(sec.pages_paragraphs):
+            # NOTE currently ignoring page breaks?
+            tei_par = tei_paragraph_elem('morph_{}-p'.format(par_num))
+            ends = [] # end offsets of each token
+###-            chosen_entries = set([(token.position, token.form, token.lemma, ':'.join(token.interp))
+###-                for sent in disamb_sec.pages_paragraphs[par_num][1]
+###-                for token in sent])
+            for sent in par:
+                tei_sent = tei_sentence_elem('morph_{}.{}-s'.format(par_num, sent_num))
+                tei_par.append(tei_sent)
+                for pos_n, position in enumerate(sent):
+                    real_token = position # if it's a list, we'll have to dig to the dicts
+                    end = 0
+                    if type(real_token) == dict:
+                        offset = real_token['offset']
+                        end = offset + len(real_token['orth'])
+                    while type(real_token) != dict:
+                        try:
+                            offset = real_token[0]['offset']
+                            end = offset + sum([len(segm['orth'] for segm in real_token)])
+                        except TypeError:
+                            pass
+                        real_token = real_token[-1]
+                    # is there a space before?
+                    is_after_pause = False # not after pause if the is no ends
+                    if ends and ends[-1] == offset:
+                        is_after_pause = True
+                    ends.append(end)
+                    if type(position) == dict:
+                        tei_seg = tei_morphos_segment_elem(token_id_counter, position,
+                                is_after_pause)
+                        tei_sent.append(tei_seg)
+                    else:
+                        for path in position:
+                            for tok_n, token in enumerate(path):
+                                if tok_n == 0:
+                                    tei_seg = tei_morphos_segment_elem(token_id_counter, token,
+                                            is_after_pause)
+                                else:
+                                    tei_seg = tei_morphos_segment_elem(token_id_counter, token,
+                                            path[tok_n-1]['offset']+len(path[tok_n-1]['orth'])
+                                            != token['offset'])
+                                tei_sent.append(tei_seg)
+                sent_num += 1
+            body.append(tei_par)
+            par_num += 1
+        tei_corps.append(tei_corp)
+    return tei_corps
+
+def write_tei_corpus(output_path, corp_name, sections, pathed_sections):
     output_path = '{}/{}'.format(output_path, corp_name.replace(' ', '_'))
     if not os.path.isdir(output_path):
         os.makedirs(output_path)
     doc_pairs = tei_raw_corpus(corp_name, sections)
-    segm_sections = tei_segmentation_sections(corp_name, parsed_sections)
-    for (raw_corp, header), segm_corp in zip(doc_pairs, segm_sections):
+    segm_sections = tei_segmentation_sections(corp_name, pathed_sections)
+    morphos_sections = tei_morphosyntax_sections(corp_name, pathed_sections)
+    for (raw_corp, header), segm_corp, morphos_corp in zip(doc_pairs, segm_sections, morphos_sections):
         dir_name = header.attrib['{'+nsmap['xml']+'}id']
         dir_path = '{}/{}'.format(output_path, dir_name)
         if not os.path.isdir(dir_path):
@@ -191,3 +392,6 @@ def write_tei_corpus(output_path, corp_name, sections, parsed_sections):
         with open('{}/ann_segmentation.xml'.format(dir_path), 'wb+') as segm_file:
             tree = ET.ElementTree(segm_corp)
             tree.write(segm_file, encoding='utf-8', xml_declaration=True, pretty_print=True)
+        with open('{}/ann_morphosyntax.xml'.format(dir_path), 'wb+') as morphos_file:
+            tree = ET.ElementTree(morphos_corp)
+            tree.write(morphos_file, encoding='utf-8', xml_declaration=True, pretty_print=True)
