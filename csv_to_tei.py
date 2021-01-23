@@ -46,4 +46,6 @@ if not args.dont_parse:
 
 # Print the TEI corpus.
 write_tei_corpus(args.output_tei_path, config['tei_code'], edition_sections,
-        pathed_sections=pathed_edition_sections)
+        pathed_sections=pathed_edition_sections,
+        page_num_shift=config['page_num_shift'] if 'page_num_shift' in config else 0,
+        publication_info=config['publication_info'] if 'publication_info' in config else {})

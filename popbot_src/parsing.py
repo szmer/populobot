@@ -170,7 +170,8 @@ def tokens_paths(sents_str, base_config=False):
             else:
                 write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent, append_sentence=True)
         # Get a list of token postions with their interps.
-        tokens_interps = path_analyzer.text_analyse('MORFEUSZ_CONCRAFT_TEMP', sents_str)
+        tokens_interps = path_analyzer.text_analyse('MORFEUSZ_CONCRAFT_TEMP', sents_str,
+                start_offset=previous_parsed_boundary)
         # Extract sentences from the tokens_interps.
         sent_counter = 0
         sent_start = 0

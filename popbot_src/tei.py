@@ -188,26 +188,23 @@ def tei_empty_subcorpus(name=False, lang=False):
     body = ET.SubElement(text, 'body', attrs)
     return tei_corp, body
 
-def tei_raw_corpus(corp_name, sections):
+def tei_raw_corpus(corp_name, sections, page_num_shift=0, publication_info={}):
     """
     A list of pairs: (main XML of the document, the header XML).
     """
     doc_pairs = []
     # TODO we need to adjust the page numbers here with the ones in editions!
     previous_page = 0
+    note_num = 1
     for sec in sections:
-        note_num = 1
         par_num = 1
         tei_corp, body = tei_empty_subcorpus()
         # the document header
         header = ET.Element('teiHeader', nsmap=nsmap)
         title_stmt = ET.SubElement(header, 'titleStmt')
         header_title = ET.SubElement(title_stmt, 'title')
-        # TODO publicationStmt - subcorpus, availability, license
         source_desc = ET.SubElement(header, 'sourceDesc')
         bibl = ET.SubElement(source_desc, 'bibl', {'type': 'original'})
-        pages_scope = ET.SubElement(bibl, 'biblScope', {'unit': 'page'})
-        pages_scope.text = '{}-{}'.format(sec.pages_paragraphs[0][0], sec.pages_paragraphs[-1][0])
         if sec.date:
             date = ET.SubElement(bibl, 'date', {'when': sec.date.isoformat()})
             date.text = sec.date.isoformat()
@@ -216,11 +213,27 @@ def tei_raw_corpus(corp_name, sections):
         author = ET.SubElement(bibl, 'author')
         author.text = sections[0].author
         ET.SubElement(header, 'revisionDesc')
-        # TODO the remaining biblio information - from config?
+        # information on the whole outer publication
+        if publication_info:
+            pub_bibl = ET.SubElement(header, 'publicationStmt')
+            series_title = ET.SubElement(pub_bibl, 'title', {'level': 's'})
+            series_title.text = sec.book_title
+            editor_elem = ET.SubElement(pub_bibl, 'editor')
+            editor_elem.text = publication_info['editor']
+            pub_place = ET.SubElement(pub_bibl, 'pubPlace', {'role': 'place'})
+            pub_place.text = publication_info['place']
+            pub_year = ET.SubElement(pub_bibl, 'date', {'when': str(publication_info['year']) })
+            pub_year.text = str(publication_info['year'])
+            pages_scope = ET.SubElement(pub_bibl, 'biblScope', {'unit': 'page'})
+            if sec.pages_paragraphs[0][0] != sec.pages_paragraphs[-1][0]:
+                pages_scope.text = '{}-{}'.format(sec.pages_paragraphs[0][0]+page_num_shift,
+                        sec.pages_paragraphs[-1][0]+page_num_shift)
+            else:
+                pages_scope.text = str(sec.pages_paragraphs[0][0]+page_num_shift)
         if sec.section_type == 'meta':
             # the header information
             header.attrib['{'+nsmap['xml']+'}id'] = 'note_{}'.format(note_num)
-            header_title.text = 'TEI P5 encoded version of note no {}'.format(note_num)
+            header_title.text = 'TEI P5 encoded version of note {}'.format(note_num)
             # the local subcorpus information
             body.append(tei_raw_note('notebody_{}'.format(note_num),
                 sec.pages_paragraphs[0][1]))
@@ -242,13 +255,13 @@ def tei_raw_corpus(corp_name, sections):
                     break_page = page
                 # NOTE We hardcode 1 in these ids, since each file contains one text
                 tei_par = tei_raw_paragraph('txt_1.{}-ab'.format(par_num),
-                        par, break_page=break_page)
+                        par, break_page=break_page+page_num_shift if break_page else 0)
                 tei_pars.append(tei_par)
                 par_num += 1
             doc = tei_raw_document('txt_{}-div'.format(sec.inbook_document_id),
                     tei_pars, title=title, type=
                     # TODO we need this to be more fine-grained
-                    ('document-sejmik-resolution' if sec.pertinence else 'document-other'))
+                    ('document-sejmik-resolution' if sec.pertinence else 'document-sejmik-other'))
             body.append(doc)
         doc_pairs.append((tei_corp, header))
     return doc_pairs
@@ -269,10 +282,12 @@ def tei_segmentation_sections(corp_name, pathed_sections):
         sent_num = 1
         token_id_counter = { 'tok_num': 0, 'corp_name': corp_name }
         tei_corp, body = tei_empty_subcorpus(name='segm', lang='pl')
-        for page, par in sec.pages_paragraphs:
-            # NOTE currently ignoring page breaks?
+        for local_par_n, (page, par) in enumerate(sec.pages_paragraphs):
             tei_par = tei_paragraph_elem('segm_{}-p'.format(par_num))
-            raw_par_id = 'segm_1.{}-ab'.format(par_num)
+            if local_par_n == 0:
+                raw_par_id = 'txt_{}-div-title'.format(sec.inbook_document_id)
+            else:
+                raw_par_id = 'segm_1.{}-ab'.format(par_num-1)
             ends = [] # end offsets of each token
             for sent in par:
                 tei_sent = tei_sentence_elem('segm_{}.{}-s'.format(par_num, sent_num))
@@ -321,7 +336,6 @@ def tei_morphosyntax_sections(corp_name, pathed_sections):
         token_id_counter = { 'tok_num': 1, 'corp_name': corp_name }
         tei_corp, body = tei_empty_subcorpus(name='morph', lang='pl')
         for par_num, (page, par) in enumerate(sec.pages_paragraphs):
-            # TODO currently ignoring page breaks?
             tei_par = tei_paragraph_elem('morph_{}-p'.format(par_num))
             ends = [] # end offsets of each token
 ###-            chosen_entries = set([(token.position, token.form, token.lemma, ':'.join(token.interp))
@@ -344,9 +358,9 @@ def tei_morphosyntax_sections(corp_name, pathed_sections):
                             pass
                         real_token = real_token[-1]
                     # is there a space before?
-                    is_after_pause = False # not after pause if the is no ends
-                    if ends and ends[-1] == offset:
-                        is_after_pause = True
+                    is_after_pause = True
+                    if ends and ends[-1] == offset: # no intervening space between this and previous token
+                        is_after_pause = False
                     ends.append(end)
                     if type(position) == dict:
                         tei_seg = tei_morphos_segment_elem(token_id_counter, position,
@@ -369,11 +383,12 @@ def tei_morphosyntax_sections(corp_name, pathed_sections):
         tei_corps.append(tei_corp)
     return tei_corps
 
-def write_tei_corpus(output_path, corp_name, sections, pathed_sections):
+def write_tei_corpus(output_path, corp_name, sections, pathed_sections, page_num_shift=0,
+        publication_info={}):
     output_path = '{}/{}'.format(output_path, corp_name.replace(' ', '_'))
     if not os.path.isdir(output_path):
         os.makedirs(output_path)
-    doc_pairs = tei_raw_corpus(corp_name, sections)
+    doc_pairs = tei_raw_corpus(corp_name, sections, page_num_shift=page_num_shift, publication_info=publication_info)
     segm_sections = tei_segmentation_sections(corp_name, pathed_sections)
     morphos_sections = tei_morphosyntax_sections(corp_name, pathed_sections)
     for (raw_corp, header), segm_corp, morphos_corp in zip(doc_pairs, segm_sections, morphos_sections):
