@@ -44,26 +44,11 @@ def tei_morphos_segment_elem(token_id_counter, position, after_pause):
         if (previous_msd # avoiding duplicate fs differing only in msd
                 and position['interps'][interp_n-1]['base'] == interp['base']
                 and position['interps'][interp_n-1]['ctag'] == interp['ctag']):
-            # See if a disambiguation entry is related to this interpratation.
-###-            if (position['start'], position['orth'], interp['base'],
-###-                    # construct the one interp tag string:
-###-                    interp['ctag']+(':'+interp['msd'] if interp['msd'] else '')) in chosen_entries:
-###-                f = ET.SubElement(fs, 'f', { 'name': 'disamb' })
-###-                disamb_fs = ET.SubElement(f, 'fs', { 'type': 'tool_report' })
-###-                ET.SubElement(disamb_fs, 'f', {
-###-                    'name': 'choice',
-###-                    'fVal': 'morph_1.{}.{}.1-msd'.format(token_id_counter['tok_num'],
-###-                        interp_n+1),
-###-                    })
-###-                disamb_interp_f = ET.SubElement(disamb_fs, 'f', { 'name': 'interpretation' })
-###-                disamb_interp_string = ET.SubElement(disamb_interp_f, 'string')
-###-                disamb_interp_string.text = '{}:{}'.format(interp['base'], interp['ctag'])+(
-###-                        ':'+interp['msd'] if interp['msd'] else '')
             # Avoid duplication on only msd differing.
             if previous_msd.tag == 'f':
-                parent = previous_msd.getparent()
-                parent.remove(previous_msd)
-                valt = ET.SubElement(parent, 'vAlt')
+                # delete the previous msd as a direct child
+                previous_msd.remove(list(previous_msd.xpath('symbol'))[0])
+                valt = ET.SubElement(previous_msd, 'vAlt')
                 ET.SubElement(valt, 'symbol', { # re-add the previous msd
                     '{'+nsmap['xml']+'}id': 'morph_1.{}.{}.1-msd'.format(token_id_counter['tok_num'],
                         interp_n),
@@ -76,7 +61,7 @@ def tei_morphos_segment_elem(token_id_counter, position, after_pause):
                     })
                 previous_msd = valt
             else:
-                ET.SubElement(valt, 'symbol', {
+                ET.SubElement(valt, 'symbol', { # the valt variable was created above
                     '{'+nsmap['xml']+'}id': 'morph_1.{}.{}.1-msd'.format(token_id_counter['tok_num'],
                         interp_n+1),
                     'value': interp['msd']
@@ -91,8 +76,11 @@ def tei_morphos_segment_elem(token_id_counter, position, after_pause):
         lemma = ET.SubElement(f, 'string')
         lemma.text = interp['base']
         f = ET.SubElement(interp_f_list, 'f', { 'name': 'ctag' })
-        pos = ET.SubElement(f, 'string')
-        pos.text = interp['ctag']
+        ET.SubElement(f, 'symbol', {
+            '{'+nsmap['xml']+'}id': 'morph_1.{}.{}.ctag'.format(token_id_counter['tok_num'],
+                interp_n+1),
+            'value': interp['ctag']
+            })
         f = ET.SubElement(interp_f_list, 'f', { 'name': 'msd' })
         ET.SubElement(f, 'symbol', {
             '{'+nsmap['xml']+'}id': 'morph_1.{}.{}.1-msd'.format(token_id_counter['tok_num'],
@@ -114,15 +102,20 @@ def tei_simple_choice_elem(position, after_pause, tokens_id_counter, raw_parent_
 def tei_parenthesis_choice_elem(position_options, after_pause, tokens_id_counter, raw_parent_id):
     choice = ET.Element('choice')
     for option in position_options:
-        paren = ET.SubElement(choice, '{'+nsmap['nkjp']+'}paren')
-        for tok_n, token in enumerate(option):
+        if len(option) > 1:
+            paren = ET.SubElement(choice, '{'+nsmap['nkjp']+'}paren')
+            for tok_n, token in enumerate(option):
+                seg = tei_segm_segment_elem(segment_id(tokens_id_counter), token['orth'], token['offset'],
+                        # is the token after a pause/space?
+                        after_pause if tok_n == 0 # (the first token)
+                        else (option[tok_n-1]['offset']+len(option[tok_n-1]['orth'])) != token['offset'],
+                        raw_parent_id)
+                paren.append(seg)
+            choice.append(paren)
+        else:
             seg = tei_segm_segment_elem(segment_id(tokens_id_counter), token['orth'], token['offset'],
-                    # is the token after a pause/space?
-                    after_pause if tok_n == 0 # (the first token)
-                    else (option[tok_n-1]['offset']+len(option[tok_n-1]['orth'])) != token['offset'],
-                    raw_parent_id)
-            paren.append(seg)
-        choice.append(paren)
+                    after_pause, raw_parent_id)
+            choice.append(seg)
     return choice
 
 def tei_sentence_elem(id, break_page=False):
@@ -215,16 +208,16 @@ def tei_raw_corpus(corp_name, sections, page_num_shift=0, publication_info={}):
         ET.SubElement(header, 'revisionDesc')
         # information on the whole outer publication
         if publication_info:
-            pub_bibl = ET.SubElement(header, 'publicationStmt')
-            series_title = ET.SubElement(pub_bibl, 'title', {'level': 's'})
+            edition = ET.SubElement(source_desc, 'bibl', {'type': 'edition'})
+            series_title = ET.SubElement(edition, 'title', {'level': 's'})
             series_title.text = sec.book_title
-            editor_elem = ET.SubElement(pub_bibl, 'editor')
+            editor_elem = ET.SubElement(edition, 'editor')
             editor_elem.text = publication_info['editor']
-            pub_place = ET.SubElement(pub_bibl, 'pubPlace', {'role': 'place'})
+            pub_place = ET.SubElement(edition, 'pubPlace', {'role': 'place'})
             pub_place.text = publication_info['place']
-            pub_year = ET.SubElement(pub_bibl, 'date', {'when': str(publication_info['year']) })
+            pub_year = ET.SubElement(edition, 'date', {'when': str(publication_info['year']) })
             pub_year.text = str(publication_info['year'])
-            pages_scope = ET.SubElement(pub_bibl, 'biblScope', {'unit': 'page'})
+            pages_scope = ET.SubElement(edition, 'biblScope', {'unit': 'page'})
             if sec.pages_paragraphs[0][0] != sec.pages_paragraphs[-1][0]:
                 pages_scope.text = '{}-{}'.format(sec.pages_paragraphs[0][0]+page_num_shift,
                         sec.pages_paragraphs[-1][0]+page_num_shift)
@@ -338,9 +331,6 @@ def tei_morphosyntax_sections(corp_name, pathed_sections):
         for par_num, (page, par) in enumerate(sec.pages_paragraphs):
             tei_par = tei_paragraph_elem('morph_{}-p'.format(par_num))
             ends = [] # end offsets of each token
-###-            chosen_entries = set([(token.position, token.form, token.lemma, ':'.join(token.interp))
-###-                for sent in disamb_sec.pages_paragraphs[par_num][1]
-###-                for token in sent])
             for sent in par:
                 tei_sent = tei_sentence_elem('morph_{}.{}-s'.format(par_num, sent_num))
                 tei_par.append(tei_sent)

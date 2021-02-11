@@ -147,7 +147,7 @@ def tokens_paths(sents_str, base_config=False):
     # Prepare the Morfeusz process.
     morfeusz_analyzer = Morfeusz(dict_path=base_config['morfeusz_model_dir'],
             dict_name=base_config['morfeusz_model'],
-            generate=False)
+            generate=False, expand_tags=True)
 
     path_analyzer = Analyse(base_config['morfeusz_model_dir'], base_config['morfeusz_model'])
     pathed_sentences = []
@@ -204,7 +204,7 @@ def parse_sentences(sents_str, verbose=False, category_sigils=True, base_config=
     # Prepare the Morfeusz process.
     morfeusz_analyzer = Morfeusz(dict_path=base_config['morfeusz_model_dir'],
             dict_name=base_config['morfeusz_model'],
-            generate=False)
+            generate=False, expand_tags=True)
 
     parsed_sents = []
     parsed_boundary = 0 # track where we left the parsing after the previous chunk
