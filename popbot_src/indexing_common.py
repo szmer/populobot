@@ -4,7 +4,7 @@ from collections import defaultdict
 csv.field_size_limit(100000000)
 
 from popbot_src.section import Section
-from popbot_src.load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match
+from popbot_src.load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match, ocr_corrected
 from popbot_src.indexing_helpers import read_config_file, read_manual_decisions, commit_doc_with_decisions
 
 def load_indexed(csv_file):
@@ -88,9 +88,14 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
             commit_previous = False # we need to do that if we've encountered a heading
             new_title = False # we will store it here to set after commiting the previous one
             meta = False # depends on detection and possibly a manual decision
-            if is_meta_fragment(paragraph, config):
+            hard_doc = False # used when there is a substring hardcoded to be inside-doc for the edition
+            if 'hard_doc_strings' in config:
+                for hard_substr in config['hard_doc_strings']:
+                    if hard_substr in paragraph:
+                        hard_doc = True
+            if not hard_doc and is_meta_fragment(paragraph, config):
                 meta = True
-                section = Section.new(config, 'meta', [(page_n, paragraph)])
+                section = Section.new(config, 'meta', [(page_n, ocr_corrected(paragraph))])
                 # A meta section is one paragraph long and cannot be split, but it
                 # can be merged.
                 for decision in page_decisions:
@@ -111,9 +116,9 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
                 # If it's not meta, handle the case where there might have been a heading previosly.
                 # Note that all document paragraphs pass through here
                 if possible_heading:
-                    if previous_heading_score + doc_beginning_score(paragraph, config) > 0:
+                    if previous_heading_score + doc_beginning_score(ocr_corrected(paragraph), config) > 0:
                         commit_previous = True
-                        new_title = possible_heading
+                        new_title = ocr_corrected(possible_heading)
                         # The new title will be added to the next document's paragraphs
                         # when we commit the current one.
                     # If there's no chance for a heading, add it to the current

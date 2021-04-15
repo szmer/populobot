@@ -202,7 +202,7 @@ def tei_raw_corpus(corp_name, sections, page_num_shift=0, publication_info={}):
             date = ET.SubElement(bibl, 'date', {'when': sec.date.isoformat()})
             date.text = sec.date.isoformat()
         region = ET.SubElement(bibl, 'region')
-        region.text = sections[0].palatinate
+        region.text = sections[0].convent_location
         author = ET.SubElement(bibl, 'author')
         author.text = sections[0].author
         ET.SubElement(header, 'revisionDesc')
@@ -280,7 +280,7 @@ def tei_segmentation_sections(corp_name, pathed_sections):
             if local_par_n == 0:
                 raw_par_id = 'txt_{}-div-title'.format(sec.inbook_document_id)
             else:
-                raw_par_id = 'segm_1.{}-ab'.format(par_num-1)
+                raw_par_id = 'txt_1.{}-ab'.format(par_num-1)
             ends = [] # end offsets of each token
             for sent in par:
                 tei_sent = tei_sentence_elem('segm_{}.{}-s'.format(par_num, sent_num))

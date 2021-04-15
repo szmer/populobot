@@ -25,7 +25,7 @@ meta_signs = [ # characteristic elements for a meta section
 # Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
 resolution_titles = [re.compile(s) for s in ['Artyk', 'Articuli', 'Postanowien', 'Uchwał[ay]', 'Deklarac', 'Laudu?m?a?', 'Konfederacy?j?', 'Instrukcy?j?[ae]', 'Instructio', 'Kwit\\s', 'Pokwitowan']]
 other_titles = [re.compile(s) for s in ['Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'App?robac[yj]a', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Popis', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac']]
-heading_signs_1ord = ( 
+heading_signs_1ord = (
     # square brackets used to number sections in editions
     [re.compile('^\\[.*\\]')]
     +
@@ -56,6 +56,22 @@ heading_antisigns = ([
     +
     # other out of place vocabulary
     [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód', 'dokumentacja', 'literatura', 'wierzytelna', ' s\\. ']])
+
+ocr_corrections = {
+        'rn ': 'm ',
+        'ćm ': 'em ',
+        'ćj ': 'ej ',
+        'wv': 'w',
+        '^@': '§',
+        '^%': '§',
+        ' lmc': ' Imc',
+        ' ct ': ' et '
+        }
+
+def ocr_corrected(paragraph):
+    for patt, corr in ocr_corrections.items():
+        paragraph = re.sub(patt, corr, paragraph)
+    return paragraph
 
 # Meta section detection.
 def is_meta_fragment(fragment, config):
@@ -258,11 +274,17 @@ def fuzzy_match(str1, str2):
     # TODO make it fuzzy.
     return re.sub('\\s|(\\\\n)', '', str1) == re.sub('\\s|(\\\\n)', '', str2)
 
-def join_linebreaks(text):
+def join_linebreaks(text, clean_end_shades=True):
+    """
+    Join a text split into lines, optionally removing junk characters occuring at the end due
+    to OCR being confused by shades.
+    """
     lines = text.split('\n')
     joined_text = ''
     for line in lines:
         if len(joined_text) > 0:
+            if re.search(' [^aeikouwyz]$', line):
+                line = line[:-2]
             if joined_text[-1] == '-' and line[0].islower():
                 joined_text = joined_text[:-1] + line
                 continue
