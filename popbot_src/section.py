@@ -235,7 +235,10 @@ class Section():
         return False
 
     def guess_date(self):
-        """Given the own title and document content, try to guess the date on which the document was created. Return the date that was chosen or False, if none was."""
+        """
+        Given the own title and document content, try to guess the date on which the document was
+        created. Assign it to the section object; return the date that was chosen or False, if none was. 
+        """
         # First, try to return the earliest (full) date from the title.
         title_dates = extract_dates(self.pages_paragraphs[0][1])
         sorted_dates = sorted([(d, m, y) for (d, m, y) in title_dates if y <= 1795], key=lambda x: x[2])

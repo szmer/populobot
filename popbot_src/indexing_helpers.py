@@ -100,7 +100,12 @@ def find_doc_and_merge(sections, pages_paragraphs, manual_decisions, meta_sectio
 
 def commit_doc_with_decisions(config, sections, pages_paragraphs, manual_decisions,
     meta_sections_buffer, current_document_id, latest_doc_section_n):
-    # See if we need merging.
+    """
+    Add the pages and paragraphs to the sections list. This applies the manual decisions (if
+    applicable), creates a document section and guesses metadata.
+    """
+    # See if we need merging, based on manual decisions and the previous document where we might
+    # merge.
     if merge_possible(manual_decisions, pages_paragraphs[0]):
         additional_sections = find_doc_and_merge(sections, pages_paragraphs, manual_decisions,
                 meta_sections_buffer, config, current_document_id)

@@ -199,15 +199,18 @@ def extract_dates(string, verbose=False):
     dates = []
     month_words = re.compile(MONTHS) # from global
     month_romandigs = re.compile('[xXvViI]{1,3}')
-    for find in list(month_words.finditer(string.lower())) + list(month_romandigs.finditer(string)):
+    for month_find in list(month_words.finditer(string.lower())) + list(month_romandigs.finditer(
+                        string)):
         month_number = False
         year_number = False
         day_number = False
 
-        # try to extract month
-        found_month = find.group(0)
+        # try to extract the month
+        found_month = month_find.group(0)
         if verbose:
             print('{} - month candidate'.format(found_month))
+
+        # For Roman digits, parse them, for the rest take then number from MONTHS.
         if not month_romandigs.match(found_month):
             for (cue, number) in month_words_to_numbers:
                 if cue in found_month.replace('i', 'j'):
@@ -223,42 +226,78 @@ def extract_dates(string, verbose=False):
         if verbose:
             print('{} - month number'.format(month_number))
 
-        # try to extract year
-        next_space_ind = find.end() + string[find.end():].find(' ')
+        next_space_ind = month_find.end() + string[month_find.end():].find(' ')
+        prev_space_ind = string[:month_find.start()].rfind(' ')
         if next_space_ind == -1:
             if verbose:
-                print('beginning of the string, aborted')
+                print('end of the string, aborted')
             continue
-        # Note thet this should work "automagically" at the end of a string.
-        expected_year_str = string[next_space_ind+1:next_space_ind+5]
-        if verbose:
-            print('{} - expected year string'.format(expected_year_str))
-        if re.match('^\\d+$', expected_year_str):
-            year_number = int(expected_year_str)
-        else:
-            continue
-        if verbose:
-            print('{} - year number'.format(year_number))
-
-        # try to extract day
-        prev_space_ind = string[:find.start()].rfind(' ')
         if prev_space_ind == -1:
             if verbose:
                 print('beginning of the string, aborted')
             continue
-        expected_day_str = string[prev_space_ind-2:prev_space_ind]
-        short_expected_day_str = string[prev_space_ind-1:prev_space_ind]
+
+        reversed_order = False # year-month-day
+
+        # try to extract the year
+        # We expect it to occur after the space after the month.
+        expected_year_str = string[next_space_ind+1:next_space_ind+5]
         if verbose:
-            print('{} - expected day string, may be 1 shorter'.format(expected_day_str))
-        if re.match('^\\d+$', expected_day_str):
-            day_number = int(expected_day_str)
-        elif re.match('^\\d+$', short_expected_day_str):
-            day_number = int(short_expected_day_str)
-        else:
-            continue
+            print('{} - expected year string (after month)'.format(expected_year_str))
+        if re.match('^\\d+$', expected_year_str):
+            year_number = int(expected_year_str)
+            if year_number < 1500 or year_number > 1795:
+                if verbose:
+                    print('Rejected the year number {}'.format(year_number))
+                year_number = False
+        # Try the alternative order, as in '1670 Januarius, 22'.
+        if not year_number:
+            expected_year_str = string[prev_space_ind-4:prev_space_ind]
+            if verbose:
+                print('{} - expected year string (before month)'.format(expected_year_str))
+            if re.match('^\\d+$', expected_year_str):
+                year_number = int(expected_year_str)
+                if year_number < 1500 or year_number > 1795:
+                    if verbose:
+                        print('Rejected the year number {}'.format(year_number))
+                    year_number = False
+                else:
+                    reversed_order = True
+            if not year_number:
+                continue
         if verbose:
-            print('{} - day number'.format(day_number))
-            print('Date found: {} {} {}'.format(day_number, month_number, year_number))
+            print('{} - year number'.format(year_number))
+
+        # try to extract the day
+        if not reversed_order:
+            expected_day_str = string[prev_space_ind-2:prev_space_ind]
+            short_expected_day_str = string[prev_space_ind-1:prev_space_ind]
+            if verbose:
+                print('{} - expected day string, may be 1 shorter'.format(expected_day_str))
+            if re.match('^\\d+$', expected_day_str):
+                day_number = int(expected_day_str)
+            elif re.match('^\\d+$', short_expected_day_str):
+                day_number = int(short_expected_day_str)
+            else:
+                continue
+            if verbose:
+                print('{} - day number'.format(day_number))
+                print('Date found: {} {} {}'.format(day_number, month_number, year_number))
+        else: # the reversed date order
+            expected_day_str = string[next_space_ind+1:next_space_ind+3]
+            short_expected_day_str = string[next_space_ind+1:next_space_ind+2]
+            if verbose:
+                print('{} - expected day string (rev. order), may be 1 shorter'.format(
+                    expected_day_str))
+            if re.match('^\\d+$', expected_day_str):
+                day_number = int(expected_day_str)
+            elif re.match('^\\d+$', short_expected_day_str):
+                day_number = int(short_expected_day_str)
+            else:
+                continue
+            if verbose:
+                print('{} - day number'.format(day_number))
+                print('Date found: {} {} {}'.format(day_number, month_number, year_number))
 
         try:
             datetime.date(year_number, month_number, day_number)
