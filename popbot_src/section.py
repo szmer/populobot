@@ -79,6 +79,7 @@ class Section():
         self.pages_paragraphs = [(int(row[3]), row[10])]
         self.pertinence = (row[11] == 'True')
         return self
+
     def row_strings(self):
         rows = []
         for scan_page, paragraph in self.pages_paragraphs:

@@ -135,7 +135,7 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
                         current_document_id, latest_doc_section_n = commit_doc_with_decisions(
                                 config, sections, current_document_paragraphs, manual_decisions,
                                 meta_sections_buffer, current_document_id, latest_doc_section_n)
-                    current_document_paragraphs = [(possible_heading_page, new_title)]
+                    current_document_paragraphs = [(possible_heading_page, ocr_corrected(new_title))]
                 heading_score_estimation = heading_score(paragraph, config)
                 previous_heading_score = heading_score_estimation
                 possible_heading = paragraph
@@ -146,7 +146,7 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
             last_page = config['ignore_page_ranges'][-1][0]
         else:
             last_page = len(pages) - 1
-        current_document_paragraphs.append((last_page, paragraph))
+        current_document_paragraphs.append((last_page, ocr_corrected(paragraph)))
     if len(current_document_paragraphs) > 0:
         current_document_id, latest_doc_section_n = commit_doc_with_decisions(
                 config, sections, current_document_paragraphs, manual_decisions,

@@ -39,9 +39,9 @@ def tei_morphos_segment_elem(token_id_counter, position, after_pause):
     text = ET.SubElement(f, 'string')
     text.text = position['orth']
     interps = ET.SubElement(fs, 'f', { 'name': 'interps' })
-    previous_msd = False # reduce duplication by merging same lemmas and pos
+    previous_msd = None # reduce duplication by merging same lemmas and pos
     for interp_n, interp in enumerate(position['interps']):
-        if (previous_msd # avoiding duplicate fs differing only in msd
+        if (previous_msd is not None # avoiding duplicate fs differing only in msd
                 and position['interps'][interp_n-1]['base'] == interp['base']
                 and position['interps'][interp_n-1]['ctag'] == interp['ctag']):
             # Avoid duplication on only msd differing.

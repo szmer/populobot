@@ -58,6 +58,7 @@ heading_antisigns = ([
     [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód', 'dokumentacja', 'literatura', 'wierzytelna', ' s\\. ']])
 
 ocr_corrections = {
+        'lnstru': 'Instru',
         'rn ': 'm ',
         'ćm ': 'em ',
         'ćj ': 'ej ',
@@ -227,7 +228,14 @@ def extract_dates(string, verbose=False):
             print('{} - month number'.format(month_number))
 
         next_space_ind = month_find.end() + string[month_find.end():].find(' ')
+        next_blank_ind = month_find.end() + string[month_find.end():].find('\n')
+        if next_space_ind == -1 or (next_blank_ind >= 0 and next_blank_ind < next_space_ind):
+            next_space_ind = next_blank_ind
         prev_space_ind = string[:month_find.start()].rfind(' ')
+        prev_blank_ind = string[:month_find.end()].rfind('\n')
+        if prev_space_ind == -1 or (prev_blank_ind >= 0 and prev_blank_ind > prev_space_ind):
+            prev_space_ind = prev_blank_ind
+
         if next_space_ind == -1:
             if verbose:
                 print('end of the string, aborted')

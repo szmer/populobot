@@ -29,7 +29,9 @@ argparser.add_argument('--dont_parse', action='store_true',
 args = argparser.parse_args()
 
 with open(args.raw_csv_path) as sections_file:
-    edition_sections = load_indexed(sections_file)
+    edition_sections = [sec for sec in load_indexed(sections_file)
+            # skip sections that have only the title.
+            if len(sec.pages_paragraphs) > 1]
 with open(args.config_file_path) as config_file:
     config = json.load(config_file)
 
