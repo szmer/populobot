@@ -227,10 +227,11 @@ def extract_dates(string, verbose=False):
         if verbose:
             print('{} - month number'.format(month_number))
 
-        next_space_ind = month_find.end() + string[month_find.end():].find(' ')
-        next_blank_ind = month_find.end() + string[month_find.end():].find('\n')
+        next_space_ind = string[month_find.end():].find(' ')
+        next_blank_ind = string[month_find.end():].find('\n')
         if next_space_ind == -1 or (next_blank_ind >= 0 and next_blank_ind < next_space_ind):
             next_space_ind = next_blank_ind
+        next_space_ind = month_find.end() + next_space_ind # align it in the whole str context
         prev_space_ind = string[:month_find.start()].rfind(' ')
         prev_blank_ind = string[:month_find.end()].rfind('\n')
         if prev_space_ind == -1 or (prev_blank_ind >= 0 and prev_blank_ind > prev_space_ind):
