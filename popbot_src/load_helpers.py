@@ -1,4 +1,3 @@
-import datetime
 import doctest
 import re
 import roman
@@ -17,9 +16,9 @@ meta_signs = [ # characteristic elements for a meta section
             # number range
             re.compile('[0-9]-[0-9]'),
             # pauses, hyphens
-            re.compile('-—'),
+            re.compile('[-—]'),
             # anachronistic vocabulary
-            re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( tek[sś])|( str\\.)', flags=re.IGNORECASE)
+            re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( tek[sś])|( str\\.)', flags=re.IGNORECASE)
         ]
 
 # Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
@@ -52,7 +51,7 @@ heading_antisigns = ([
     ]
     +
     # verb endings
-    [re.compile(s) for s in ['[aeu]j[ąe][,\.\\s]', '[ae]my[,\.\\s]', '[aeyi]ć[,\.\\s]', '[iyaeąę]ł[ay]?[,\.\\s]', '[iae[iaeąę]]li?[,\.\\s]', '[sś]my[,\.\\s]', 'ąc[aey]?[mj]?u?[,\.\\s]', '[aoe]n[yieaą][jm]?[,\.\\s]', 'wszy[,\.\\s]', 'eni[ea]m?[,\.\\s]']]
+    [re.compile(s) for s in ['[aeu]j[ąe][,\\.\\s]', '[ae]my[,\\.\\s]', '[aeyi]ć[,\\.\\s]', '[iyaeąę]ł[ay]?[,\\.\\s]', '[iae[iaeąę]]li?[,\\.\\s]', '[sś]my[,\\.\\s]', 'ąc[aey]?[mj]?u?[,\\.\\s]', '[aoe]n[yieaą][jm]?[,\\.\\s]', 'wszy[,\\.\\s]', 'eni[ea]m?[,\\.\\s]']]
     +
     # other out of place vocabulary
     [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód', 'dokumentacja', 'literatura', 'wierzytelna', ' s\\. ']])
@@ -241,26 +240,65 @@ def extract_dates(string, verbose=False):
             if verbose:
                 print('end of the string, aborted')
             continue
+
+        reversed_order = False # year-month-day or month-day-year
+
+        # Try to extract the next number. This may be the year or the day.
+        expected_num_str = string[next_space_ind+1:next_space_ind+5]
+        if verbose:
+            print('{} - expected number (after month)'.format(expected_num_str))
+        try:
+            first_num_str = re.search('\\d{1,4}', expected_num_str).group(0)
+        except AttributeError: # if search() produces None
+            continue
+        if len(first_num_str) == 3:
+            continue
+        first_num = int(first_num_str)
+        if len(first_num_str) == 4:
+            year_number = first_num
+            if year_number < 1500 or year_number > 1795:
+                if verbose:
+                    print('Rejected the year number {}'.format(year_number))
+                year_number = False
+        else: # we've eliminated the 3-letter case earlier
+            day_number = first_num
+            if (day_number > 31
+                    or (month_number == 2 and day_number > 29)
+                    or (month_number in [4,6,9,11] and day_number > 30)):
+                if verbose:
+                    print('{} day number rejected for month {}'.format(day_number, month_number))
+                day_number = False
+            else:
+                if verbose:
+                    print('{} - day number'.format(day_number))
+                reversed_order = True
+                try:
+                    # If this suceeds, we have a month-day-year date.
+                    expected_num2_str = re.search('\\d{4}', string[next_space_ind+1+len(first_num_str)+1
+                            # give allowance for "anno domini" etc.
+                            :next_space_ind+1+len(first_num_str)+20]).group(0)
+                    year_number = int(expected_num2_str)
+                except AttributeError:
+                    pass
+                if year_number and year_number < 1500 or year_number > 1795:
+                    if verbose:
+                        print('Rejected the year number {}'.format(year_number))
+                    year_number = False
+                    day_number = False
+                elif year_number:
+                    if verbose:
+                        print('{} - year number'.format(year_number))
+                    dates.append((day_number, month_number, year_number))
+                    continue
+
+        # If we don't have a date by now, we would need some chars before the month.
         if prev_space_ind == -1:
             if verbose:
                 print('beginning of the string, aborted')
             continue
 
-        reversed_order = False # year-month-day
-
-        # try to extract the year
-        # We expect it to occur after the space after the month.
-        expected_year_str = string[next_space_ind+1:next_space_ind+5]
-        if verbose:
-            print('{} - expected year string (after month)'.format(expected_year_str))
-        if re.match('^\\d+$', expected_year_str):
-            year_number = int(expected_year_str)
-            if year_number < 1500 or year_number > 1795:
-                if verbose:
-                    print('Rejected the year number {}'.format(year_number))
-                year_number = False
         # Try the alternative order, as in '1670 Januarius, 22'.
-        if not year_number:
+        if reversed_order:
             expected_year_str = string[prev_space_ind-4:prev_space_ind]
             if verbose:
                 print('{} - expected year string (before month)'.format(expected_year_str))
@@ -274,46 +312,30 @@ def extract_dates(string, verbose=False):
                     reversed_order = True
             if not year_number:
                 continue
-        if verbose:
-            print('{} - year number'.format(year_number))
-
-        # try to extract the day
-        if not reversed_order:
-            expected_day_str = string[prev_space_ind-2:prev_space_ind]
-            short_expected_day_str = string[prev_space_ind-1:prev_space_ind]
             if verbose:
-                print('{} - expected day string, may be 1 shorter'.format(expected_day_str))
-            if re.match('^\\d+$', expected_day_str):
-                day_number = int(expected_day_str)
-            elif re.match('^\\d+$', short_expected_day_str):
-                day_number = int(short_expected_day_str)
-            else:
+                print('{} - year number'.format(year_number))
+        # Try to extract the day for the normal order day-month-year
+        else:
+            expected_day_str = string[max(prev_space_ind-3, 0):prev_space_ind]
+            if verbose:
+                print('{} - expected day string'.format(expected_day_str))
+            try:
+                day_number = int(re.search('\\d+', expected_day_str).group(0))
+            except AttributeError:
+                continue
+            if (day_number > 31
+                    or (month_number == 2 and day_number > 29)
+                    or (month_number in [4,6,9,11] and day_number > 30)):
+                if verbose:
+                    print('{} day number rejected for month {}'.format(day_number, month_number))
                 continue
             if verbose:
                 print('{} - day number'.format(day_number))
-                print('Date found: {} {} {}'.format(day_number, month_number, year_number))
-        else: # the reversed date order
-            expected_day_str = string[next_space_ind+1:next_space_ind+3]
-            short_expected_day_str = string[next_space_ind+1:next_space_ind+2]
-            if verbose:
-                print('{} - expected day string (rev. order), may be 1 shorter'.format(
-                    expected_day_str))
-            if re.match('^\\d+$', expected_day_str):
-                day_number = int(expected_day_str)
-            elif re.match('^\\d+$', short_expected_day_str):
-                day_number = int(short_expected_day_str)
-            else:
-                continue
-            if verbose:
-                print('{} - day number'.format(day_number))
-                print('Date found: {} {} {}'.format(day_number, month_number, year_number))
 
-        try:
-            datetime.date(year_number, month_number, day_number)
-        except ValueError: # mostly bad day number
-            continue
-
-        dates.append((day_number, month_number, year_number))
+        if day_number and month_number and year_number:
+            if verbose:
+                print('Date found: {} {} {}'.format(day_number, month_number, year_number))
+            dates.append((day_number, month_number, year_number))
 
     return dates
 
