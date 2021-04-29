@@ -11,3 +11,5 @@ def test_extract_dates():
     assert extract_dates('Februarius, 30. 1703') == []
     assert extract_dates('1650 Februarius, 3. 173') == [(3, 2, 1650)]
     assert extract_dates('(Junius, 28), anno Domini 1706.') == [(28, 6, 1706)]
+    assert extract_dates('blabla  Februarius 1703', verbose=True, months_ok=True) == [(2, 1703)]
+    assert extract_dates('Februarius 1703', verbose=True, months_ok=True) == [(2, 1703)]

@@ -188,13 +188,10 @@ month_words_to_numbers = [
         ('grud', 12),
         ('dece', 12),
         ]
-def extract_dates(string, verbose=False):
-    """Find dates in string and return them as a list of triples (day, month, year).
-
-    >>> extract_dates("4. U niwe-rsal zjazdu do starostów o dawanie pomocy posłom, wysłanym do k-ro'lewnej Anny do Płocka, z Osieka- 4 października 1572 -r. eis huiuscemodi litteris. Uw. Po akcie pomieszczone ~w rękopisie. mz k. 72—72")
-    [(4, 10, 1572)]
-    >>> extract_dates('9 V 1955')
-    [(9, 5, 1955)]
+def extract_dates(string, months_ok=True, verbose=False):
+    """
+    Find dates in string and return them as a list of triples (day, month, year), or also only
+    (month, year) if months_ok == True.
     """
     dates = []
     month_words = re.compile(MONTHS) # from global
@@ -293,11 +290,14 @@ def extract_dates(string, verbose=False):
 
         # If we don't have a date by now, we would need some chars before the month.
         if prev_space_ind == -1:
-            if verbose:
+            if months_ok and year_number and month_number:
+                print('Date found: {} {}'.format(month_number, year_number))
+                dates.append((month_number, year_number))
+            elif verbose:
                 print('beginning of the string, aborted')
             continue
 
-        # Try the alternative order, as in '1670 Januarius, 22'.
+        # Try to find the year for the alternative order, as in '1670 Januarius, 22'.
         if reversed_order:
             expected_year_str = string[prev_space_ind-4:prev_space_ind]
             if verbose:
@@ -322,12 +322,18 @@ def extract_dates(string, verbose=False):
             try:
                 day_number = int(re.search('\\d+', expected_day_str).group(0))
             except AttributeError:
+                if months_ok and year_number and month_number:
+                    print('Date found: {} {}'.format(month_number, year_number))
+                    dates.append((month_number, year_number))
                 continue
             if (day_number > 31
                     or (month_number == 2 and day_number > 29)
                     or (month_number in [4,6,9,11] and day_number > 30)):
                 if verbose:
                     print('{} day number rejected for month {}'.format(day_number, month_number))
+                if months_ok and year_number and month_number:
+                    print('Date found: {} {}'.format(month_number, year_number))
+                    dates.append((month_number, year_number))
                 continue
             if verbose:
                 print('{} - day number'.format(day_number))
