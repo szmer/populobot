@@ -1,3 +1,4 @@
+import datetime
 import doctest
 import re
 import roman
@@ -16,7 +17,7 @@ meta_signs = [ # characteristic elements for a meta section
             # number range
             re.compile('[0-9]-[0-9]'),
             # pauses, hyphens
-            re.compile('[-—]'),
+            re.compile('[ \\d][-—][ \\d]'),
             # anachronistic vocabulary
             re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( tek[sś])|( str\\.)', flags=re.IGNORECASE)
         ]
@@ -74,31 +75,53 @@ def ocr_corrected(paragraph):
     return paragraph
 
 # Meta section detection.
-def is_meta_fragment(fragment, config):
+def is_meta_fragment(fragment, config, verbose=False):
     for sign in meta_signs:
         if sign.search(fragment):
-            ###print(sign, fragment)
+            if verbose:
+                print('Found {} in {}'.format(sign, fragment))
             return True
     # If a large part of the fragment of non-alphabetic (re.sub removes alphabetics for the check)
     if len(fragment) > 0 and len(re.sub('[^\\W0-9]', '', fragment)) / len(fragment) >= 0.65:
+        if verbose:
+            print('Too much non-alphabetic in {}'.format(fragment))
         return True
     # If almost a majority of the fragment's tokens are very short (happens in footnotes)
     tokens = [t for t in re.split('\\s', fragment) if len(t) > 0]
     if len([t for t in tokens if len(t) <= 2]) > 0.48 * len(tokens):
+        if verbose:
+            print('Very short tokens in {}'.format(fragment))
         return True
     # If there are fully uppercase words.
     if len(tokens) < 10:
         for t in tokens:
             if len(t) > 3 and re.sub('[IVXCLM]', '', t) != t and t == t.upper() and t != t.lower():
+                if verbose:
+                    print('Fully capitalized {} in {}'.format(t, fragment))
                 return True
     # If the majority of words are capitalized or numbers.
-    if ((len([t for t in tokens if t[0] != t[0].lower() or re.search('[\\W0-9]', t[0])])) > 0.65 * len(tokens)):
+    capit_or_num_count = (
+            len([t for t in tokens if t[0] != t[0].lower() or re.search('[\\W0-9]', t[0])]))
+    if capit_or_num_count > 0.85 * len(tokens):
+        if verbose:
+            print('Almost all capitalized or numbers in {}'.format(fragment))
+        return True
+    if capit_or_num_count > 0.65 * len(tokens):
         # Be more liberal if may be a section.
         signs_1ord = [s.search(fragment) for s in heading_signs_1ord]
         if len(signs_1ord) <= 1:
+            if verbose:
+                print('Majority capitalized or numbers in {}'.format(fragment))
             return True
+    # If there are many footnote point-like places.
+    if len(list(re.findall('\\d\\)', fragment))) >= 3:
+        if verbose:
+            print('Too many footnote point-like places in {}'.format(fragment))
+        return True
     # If there is very few kinds of characters used
     if len(fragment) in range(2, 17) and len(set(fragment.lower())) <= max(2, len(fragment) / 3):
+        if verbose:
+            print('Few character types in {}'.format(fragment))
         return True
     # If large percentage of tokens is abbreviated
     ###if fragment.count(' ') > 0 and fragment.count('. ') / fragment.count(' ') >= 0.33:
@@ -288,7 +311,13 @@ def extract_dates(string, verbose=False):
                 elif year_number:
                     if verbose:
                         print('{} - year number'.format(year_number))
-                    dates.append((day_number, month_number, year_number))
+                    try:
+                        datetime.date(int(year_number), int(month_number), int(day_number))
+                        dates.append((day_number, month_number, year_number))
+                    except ValueError:
+                        if verbose:
+                            print('Invalid date {}-{}-{}'.format(day_number, month_number, year_number))
+                        continue
                     continue
 
         # If we don't have a date by now, we would need some chars before the month.
@@ -335,7 +364,13 @@ def extract_dates(string, verbose=False):
         if day_number and month_number and year_number:
             if verbose:
                 print('Date found: {} {} {}'.format(day_number, month_number, year_number))
-            dates.append((day_number, month_number, year_number))
+            try:
+                datetime.date(int(year_number), int(month_number), int(day_number))
+                dates.append((day_number, month_number, year_number))
+            except ValueError:
+                if verbose:
+                    print('Invalid date {}-{}-{}'.format(day_number, month_number, year_number))
+                continue
 
     return dates
 

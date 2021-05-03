@@ -186,7 +186,6 @@ def tei_raw_corpus(corp_name, sections, page_num_shift=0, publication_info={}):
     A list of pairs: (main XML of the document, the header XML).
     """
     doc_pairs = []
-    # TODO we need to adjust the page numbers here with the ones in editions!
     previous_page = 0
     note_num = 1
     for sec in sections:
@@ -378,6 +377,7 @@ def write_tei_corpus(output_path, corp_name, sections, pathed_sections, page_num
     output_path = '{}/{}'.format(output_path, corp_name.replace(' ', '_'))
     if not os.path.isdir(output_path):
         os.makedirs(output_path)
+    # Main XMLs of the document and the header XMLs.
     doc_pairs = tei_raw_corpus(corp_name, sections, page_num_shift=page_num_shift, publication_info=publication_info)
     segm_sections = tei_segmentation_sections(corp_name, pathed_sections)
     morphos_sections = tei_morphosyntax_sections(corp_name, pathed_sections)
