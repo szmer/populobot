@@ -76,6 +76,14 @@ def ocr_corrected(paragraph):
 
 # Meta section detection.
 def is_meta_fragment(fragment, config, verbose=False):
+    if len(fragment) < 9:
+        if verbose:
+            print('Too few characters in {}'.format(fragment))
+        return True
+    if any([(len(line) > config['max_nonmeta_line_len']) for line in fragment.split('\\n')]):
+        if verbose:
+            print('There is a line too in fragment {}'.format(fragment))
+        return True
     for sign in meta_signs:
         if sign.search(fragment):
             if verbose:
@@ -99,9 +107,10 @@ def is_meta_fragment(fragment, config, verbose=False):
                 if verbose:
                     print('Fully capitalized {} in {}'.format(t, fragment))
                 return True
-    # If the majority of words are capitalized or numbers.
+    # If the majority of words are capitalized or numbers, or non-alphanumeric.
     capit_or_num_count = (
-            len([t for t in tokens if t[0] != t[0].lower() or re.search('[\\W0-9]', t[0])]))
+            len([t for t in tokens if (t[0] != t[0].lower()) or (re.search('[\\W0-9]', t))])
+    )
     if capit_or_num_count > 0.85 * len(tokens):
         if verbose:
             print('Almost all capitalized or numbers in {}'.format(fragment))
@@ -114,7 +123,7 @@ def is_meta_fragment(fragment, config, verbose=False):
                 print('Majority capitalized or numbers in {}'.format(fragment))
             return True
     # If there are many footnote point-like places.
-    if len(list(re.findall('\\d\\)', fragment))) >= 3:
+    if len(list(re.findall(' .\\)', fragment))) >= 2:
         if verbose:
             print('Too many footnote point-like places in {}'.format(fragment))
         return True
@@ -124,8 +133,10 @@ def is_meta_fragment(fragment, config, verbose=False):
             print('Few character types in {}'.format(fragment))
         return True
     # If large percentage of tokens is abbreviated
-    ###if fragment.count(' ') > 0 and fragment.count('. ') / fragment.count(' ') >= 0.33:
-    ###    return True
+    if fragment.count(' ') > 0 and fragment.count('. ') / fragment.count(' ') >= 0.33:
+        if verbose:
+            print('Too many tokens are abbreviations in {}'.format(fragment))
+        return True
     return False
 
 # Headings detection.
