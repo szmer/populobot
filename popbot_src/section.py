@@ -50,8 +50,6 @@ class Section():
                 self.pertinence = False
         else:
             self.pertinence = pertinence
-#        if section_id == 23:
-#            fail()
         return self
 
     @classmethod

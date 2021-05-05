@@ -80,9 +80,9 @@ def is_meta_fragment(fragment, config, verbose=False):
         if verbose:
             print('Too few characters in {}'.format(fragment))
         return True
-    if any([(len(line) > config['max_nonmeta_line_len']) for line in fragment.split('\\n')]):
+    if any([(len(line) > config['max_nonmeta_line_len']) for line in fragment.split('\n')]):
         if verbose:
-            print('There is a line too in fragment {}'.format(fragment))
+            print('There is a line that is too long in fragment {}'.format(fragment))
         return True
     for sign in meta_signs:
         if sign.search(fragment):
@@ -123,7 +123,7 @@ def is_meta_fragment(fragment, config, verbose=False):
                 print('Majority capitalized or numbers in {}'.format(fragment))
             return True
     # If there are many footnote point-like places.
-    if len(list(re.findall(' .\\)', fragment))) >= 2:
+    if len(fragment) < 380 and len(list(re.findall(' .\\)', fragment))) >= 2:
         if verbose:
             print('Too many footnote point-like places in {}'.format(fragment))
         return True
