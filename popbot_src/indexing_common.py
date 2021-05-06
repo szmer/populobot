@@ -48,10 +48,14 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
 
     # Load all the files.
     pages = [] # as lists of lines
+    page_filenames = dict()
+    file_n = 0
     for dirname, dirnames, filenames in os.walk(config['path']):
         filenames = sorted(filenames)
         for filename in filenames:
             if re.match('^'+config['prefix'], filename):
+                page_filenames[file_n] = filename
+                file_n += 1
                 with open(dirname + filename) as text_file:
                     pages.append(text_file.read())
 
@@ -74,8 +78,9 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
     for page_n, page in enumerate(pages):
         ignored_page = False
         if 'ignore_page_ranges' in config:
+            true_n = int(page_filenames[page_n].split('-')[1].split('.')[0])
             for page_range in config['ignore_page_ranges']:
-                if page_n >= page_range[0] and page_n < page_range[1]:
+                if true_n >= page_range[0] and true_n < page_range[1]:
                     ignored_page = True
         if ignored_page:
             continue
@@ -88,7 +93,7 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
                 lines = paragraph.split('\n')
                 for li, line in enumerate(lines):
                     if li != len(lines)-1 and len(line) < config['min_inparagraph_line_len']:
-                        split_paragraphs.append('\n'.join(lines[:li]))
+                        split_paragraphs.append('\n'.join(lines[last_split:li]))
                         last_split = li+1
                 split_paragraphs.append('\n'.join(lines[last_split:]))
         paragraphs = split_paragraphs
@@ -127,7 +132,8 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
                 # If it's not meta, handle the case where there might have been a heading previosly.
                 # Note that all document paragraphs pass through here
                 if possible_heading:
-                    if previous_heading_score + doc_beginning_score(ocr_corrected(paragraph), config) > 0:
+                    if (previous_heading_score
+                            + max(0, doc_beginning_score(ocr_corrected(paragraph), config))) > 0:
                         commit_previous = True
                         new_title = ocr_corrected(possible_heading)
                         # The new title will be added to the next document's paragraphs

@@ -7,7 +7,8 @@ MONTHS = '(stycze?[nń])|(luty?)|(marz?e?c)|(kwie[tc]i?e?[nń])|(maj)|(czerwi?e?
 
 meta_signs = [ # characteristic elements for a meta section
             # page range at the end
-            re.compile('\\d+-\\d+\\.$'),
+            re.compile('\\d+[-—]'),
+            re.compile('[-—]\\d+'),
             # "Rękopis"
             re.compile('^.?.?Rp\\.'),
             # "mowa o"
@@ -16,21 +17,20 @@ meta_signs = [ # characteristic elements for a meta section
             re.compile('^[\\WiIvVxX]{1,3} [^\\\\]{1,40}$'),
             # number range
             re.compile('[0-9]-[0-9]'),
-            # pauses, hyphens
-            re.compile('[ \\d][-—][ \\d]'),
             # anachronistic vocabulary
-            re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( tek[sś])|( str\\.)|jak to utrzymy', flags=re.IGNORECASE)
+            re.compile('(wsp[oöó0][lł)|(]czesn)|(De[oc]r\\.)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|(Corpus)|( z?ob\\.)|( str\\.)|(mowa tu)|jak to utrzymy', flags=re.IGNORECASE)
         ]
 
 # Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
-resolution_titles = [re.compile(s) for s in ['Artyk', 'Articuli', 'Postanowien', 'Uchwał[ay]', 'Deklarac', 'Laudu?m?a?', 'Konfederacy?j?', 'Instrukcy?j?[ae]', 'Instructio', 'Kwit\\s', 'Pokwitowan']]
-other_titles = [re.compile(s) for s in ['Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'App?robac[yj]a', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Popis', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac']]
+resolution_titles = [re.compile(s) for s in ['Artyk', 'Articuli', 'Postanowien', 'Uchwał[ay]', 'Deklarac', 'Laudu?m?a?', 'Konfedera', 'Instru[kc]', 'Kwit\\s', 'Pokwitowan']]
+other_titles = [re.compile(s) for s in ['Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'App?robac[yj]a', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Popis', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Zagajen', 'Upomnien', 'Szlachta', 'Ziemian', 'Sejmik', 'Kasztel', 'S[ąę]d', 'Chor', 'Podkomo']]
 heading_signs_1ord = (
     # square brackets used to number sections in editions
     [re.compile('^\\[.*\\]')]
     +
     # titles - each of those will count as one occurence of a sign
     resolution_titles + other_titles)
+
 heading_signs_2ord = ([
     re.compile('\\d+'),
     # numbers put in words
@@ -41,21 +41,23 @@ heading_signs_2ord = ([
         + '|' + MONTHS)]
     +
     # types of documents/assemblies
-    [re.compile(s, flags=re.IGNORECASE) for s in ['przedsejmo', 'konwokacyj', 'deput', 'zwołuj', 'kwituj', 'wyboru', 'elekc[jy]', 'wzywa', 'ruszenia', 'posłom']]
+    [re.compile(s, flags=re.IGNORECASE) for s in ['przedsejmo', 'konwokacyj', 'deput', 'zwołuj', 'kwituj', 'wyboru', 'elekc[jy]', 'wzywa', 'ruszenia', 'posłom', 'skład', 'zwołu']]
     +
     # instances issuing documents
     [re.compile(s, flags=re.IGNORECASE) for s in ['sejmiku', 'conventus', 'palatinatu', 'przedsejmo', 'konwokacyj', 'deput', 'województwa', 'ziemi', 'księstw', 'rycerstw', 'szlachty', 'ziemian']])
 
-# The number of antisigns is subtracted from the number of signs.
+# The number of antisigns in a given fragment is subtracted from the number of signs.
 heading_antisigns = ([
     re.compile('\\D0+'), # isolated zeros are bogus
     ]
     +
-    # verb endings
-    [re.compile(s) for s in ['[aeu]j[ąe][,\\.\\s]', '[ae]my[,\\.\\s]', '[aeyi]ć[,\\.\\s]', '[iyaeąę]ł[ay]?[,\\.\\s]', '[iae[iaeąę]]li?[,\\.\\s]', '[sś]my[,\\.\\s]', 'ąc[aey]?[mj]?u?[,\\.\\s]', '[aoe]n[yieaą][jm]?[,\\.\\s]', 'wszy[,\\.\\s]', 'eni[ea]m?[,\\.\\s]']]
+    [re.compile('Actum')]
+    +
+    # some verb endings
+    [re.compile(s) for s in ['[ae]my[,\\.\\s]', '[aeyi]ć[,\\.\\s]', '[iyaeąę]ł[ay]?[,\\.\\s]', '[iae[iaeąę]]li?[,\\.\\s]', '[sś]my[,\\.\\s]', 'ąc[aey]?[mj]?u?[,\\.\\s]', '[aoe]n[yieaą][jm]?[,\\.\\s]']]
     +
     # other out of place vocabulary
-    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '[A-ZŻŹŁŚ]\\w+[sc]ki(emu)?\\s', '\\sby[lł]', 'działo', 'się', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', 'grodzkie\\s', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód', 'dokumentacja', 'literatura', 'wierzytelna', ' s\\. ']])
+    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '\\sby[lł]', 'działo', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód', 'dokumentacja', 'literatura', 'wierzytelna', ' s\\. ', 'nieprawy']])
 
 ocr_corrections = {
         'lnstru': 'Instru',
@@ -124,7 +126,9 @@ def is_meta_fragment(fragment, config, verbose=False):
                 print('Majority capitalized or numbers in {}'.format(fragment))
             return True
     # If there are many footnote point-like places.
-    if len(fragment) < 380 and len(list(re.findall('(^| ).\\)', fragment))) >= 2:
+    # (look also for footnotes looking like this: "a )" - it's the second sub-pattern before the
+    # ending paren)
+    if len(fragment) < 380 and len(list(re.findall('(((^| ).)|(. ))\\)', fragment))) >= 2:
         if verbose:
             print('Too many footnote point-like places in {}'.format(fragment))
         return True
@@ -142,6 +146,10 @@ def is_meta_fragment(fragment, config, verbose=False):
 
 # Headings detection.
 def heading_score(paragraph, config, verbose=False):
+    """
+    Compute a score estimating how likely the paragraph is to be a heading. Generally fragments
+    with heading score above 0 can be considered headings.
+    """
     if len(paragraph) < 15 or len(paragraph) > config['max_heading_len']:
         return -1.5
 
@@ -160,27 +168,32 @@ def heading_score(paragraph, config, verbose=False):
         signs_2ord_count -= 1.5
         if verbose:
             print('-1.5 from no first-order signs')
-    elif len([s.search(paragraph) for s in heading_signs_1ord[:25]]):
+    elif not len([s.search(paragraph) for s in heading_signs_1ord[:25]]):
         signs_2ord_count -= 1.0
         if verbose:
             print('-1.0 from no first-order signs in the first 25 characters')
     signs_count = signs_1ord_count + signs_2ord_count
+
     antisigns = [s.search(paragraph) for s in heading_antisigns]
     antisigns_count = len([s for s in antisigns if s]) * 0.6
     if verbose:
         print('-{:.1f} from anti-signs {}'.format(antisigns_count, [s.group(0) for s in antisigns if s]))
+
     # If the first letter is not uppercase, it's a strong signal against.
     try:
         first_letter = re.search('[^\\W\\d_]', paragraph).group(0)
         if first_letter.lower() == first_letter:
             if verbose:
-                print('-1.0 lowercase')
+                print('-1.0 from lowercase first letter')
             antisigns_count += 1
     # Penalize also no-letter paragraphs if such are found.
     except AttributeError:
         antisigns_count += 1
+
     signs_count -= antisigns_count
-###    print(paragraph, signs_count, 'signs')
+    if verbose:
+        print(paragraph, signs_count, 'signs')
+
     # To be positive, the signs count must be more than a factor dependent on paragraph length
     if verbose:
         print('-{:.1f} from paragraph length'.format((len(paragraph) / 70)))
