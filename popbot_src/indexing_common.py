@@ -1,6 +1,5 @@
 import csv, os, re, sys
 from collections import defaultdict
-from copy import copy
 
 csv.field_size_limit(100000000)
 
@@ -82,16 +81,16 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
             continue
         paragraphs = page.split('\n\n')
         page_decisions = manual_decisions[page_n]
-        split_paragraphs = copy(paragraphs)
+        split_paragraphs = []
         if 'min_inparagraph_line_len' in config:
             for pi, paragraph in enumerate(paragraphs):
                 last_split = 0
-                lines = paragraph.split('\\n')
+                lines = paragraph.split('\n')
                 for li, line in enumerate(lines):
                     if li != len(lines)-1 and len(line) < config['min_inparagraph_line_len']:
-                        split_paragraphs.append('\\n'.join(lines[:li]))
+                        split_paragraphs.append('\n'.join(lines[:li]))
                         last_split = li+1
-                split_paragraphs.append('\\n'.join(lines[last_split:]))
+                split_paragraphs.append('\n'.join(lines[last_split:]))
         paragraphs = split_paragraphs
         for paragraph in paragraphs:
             paragraph = paragraph.strip()

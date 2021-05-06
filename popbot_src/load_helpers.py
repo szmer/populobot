@@ -19,7 +19,7 @@ meta_signs = [ # characteristic elements for a meta section
             # pauses, hyphens
             re.compile('[ \\d][-—][ \\d]'),
             # anachronistic vocabulary
-            re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( tek[sś])|( str\\.)', flags=re.IGNORECASE)
+            re.compile('(wsp[oöó0][lł)|(]czesn)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( tek[sś])|( str\\.)|jak to utrzymy', flags=re.IGNORECASE)
         ]
 
 # Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
@@ -84,11 +84,12 @@ def is_meta_fragment(fragment, config, verbose=False):
         if verbose:
             print('There is a line that is too long in fragment {}'.format(fragment))
         return True
-    for sign in meta_signs:
-        if sign.search(fragment):
-            if verbose:
-                print('Found {} in {}'.format(sign, fragment))
-            return True
+    if len(fragment) < 800:
+        for sign in meta_signs:
+            if sign.search(fragment):
+                if verbose:
+                    print('Found {} in {}'.format(sign, fragment))
+                return True
     # If a large part of the fragment of non-alphabetic (re.sub removes alphabetics for the check)
     if len(fragment) > 0 and len(re.sub('[^\\W0-9]', '', fragment)) / len(fragment) >= 0.65:
         if verbose:
@@ -123,7 +124,7 @@ def is_meta_fragment(fragment, config, verbose=False):
                 print('Majority capitalized or numbers in {}'.format(fragment))
             return True
     # If there are many footnote point-like places.
-    if len(fragment) < 380 and len(list(re.findall(' .\\)', fragment))) >= 2:
+    if len(fragment) < 380 and len(list(re.findall('(^| ).\\)', fragment))) >= 2:
         if verbose:
             print('Too many footnote point-like places in {}'.format(fragment))
         return True
