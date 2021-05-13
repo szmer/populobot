@@ -23,7 +23,7 @@ meta_signs = [ # characteristic elements for a meta section
 
 # Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
 resolution_titles = [re.compile(s) for s in ['Artyk', 'Articuli', 'Postanowien', 'Uchwał[ay]', 'Deklarac', 'Laudu?m?a?', 'Konfedera', 'Instru[kc]', 'Kwit\\s', 'Pokwitowan']]
-other_titles = [re.compile(s) for s in ['Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'App?robac[yj]a', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Popis', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Zagajen', 'Upomnien', 'Szlachta', 'Ziemian', 'Sejmik', 'Kasztel', 'S[ąę]d', 'Chor', 'Podkomo']]
+other_titles = [re.compile(s) for s in ['Uniwersa[lł]', 'Wezwanie', 'Mandat', 'Legac[yj]', 'Deputac[yj]', 'Pełnomocnic', 'Poselstwo', 'App?robac[yj]a', 'Odpowiedź', 'List', 'Mowa', 'Wotum', 'Zdanie', 'Pokazowan', 'Okazowan', 'Popis', 'Manifest', 'Protest', 'Reprotest', 'Reskrypt', 'Uniwersał', 'Actum', 'Zjazd', 'D[iy]ar[iy]usz', 'Relac', 'Zapisk', 'Sejmik', 'Zebranie', 'Continuatio', 'Limitatio', 'Literae', 'Zebrani', 'Zaświadczenie', 'Stwierdzenie', 'Att?estac', 'Zagajen', 'Upomnien', 'Szlachta', 'Ziemian', 'Sejmik', 'Kasztel', 'S[ąę]d', 'Chor', 'Podkomo', 'Taxa']]
 heading_signs_1ord = (
     # square brackets used to number sections in editions
     [re.compile('^\\[.*\\]')]
@@ -50,8 +50,6 @@ heading_signs_2ord = ([
 heading_antisigns = ([
     re.compile('\\D0+'), # isolated zeros are bogus
     ]
-    +
-    [re.compile('Actum')]
     +
     # some verb endings
     [re.compile(s) for s in ['[ae]my[,\\.\\s]', '[aeyi]ć[,\\.\\s]', '[iyaeąę]ł[ay]?[,\\.\\s]', '[iae[iaeąę]]li?[,\\.\\s]', '[sś]my[,\\.\\s]', 'ąc[aey]?[mj]?u?[,\\.\\s]', '[aoe]n[yieaą][jm]?[,\\.\\s]']]
@@ -111,20 +109,22 @@ def is_meta_fragment(fragment, config, verbose=False):
                     print('Fully capitalized {} in {}'.format(t, fragment))
                 return True
     # If the majority of words are capitalized or numbers, or non-alphanumeric.
-    capit_or_num_count = (
-            len([t for t in tokens if (t[0] != t[0].lower()) or (re.search('[\\W0-9]', t))])
-    )
-    if capit_or_num_count > 0.85 * len(tokens):
-        if verbose:
-            print('Almost all capitalized or numbers in {}'.format(fragment))
-        return True
-    if capit_or_num_count > 0.65 * len(tokens):
-        # Be more liberal if may be a section.
-        signs_1ord = [s.search(fragment) for s in heading_signs_1ord]
-        if len(signs_1ord) <= 1:
+    titles_presence = any([True for s in resolution_titles+other_titles if s.search(fragment)])
+    if not titles_presence:
+        capit_or_num_count = (
+                len([t for t in tokens if (t[0] != t[0].lower()) or (re.search('[\\W0-9]', t))])
+        )
+        if capit_or_num_count > 0.85 * len(tokens):
             if verbose:
-                print('Majority capitalized or numbers in {}'.format(fragment))
+                print('Almost all capitalized or numbers in {}'.format(fragment))
             return True
+        if capit_or_num_count > 0.65 * len(tokens):
+            # Be more liberal if may be a section.
+            signs_1ord = [s.search(fragment) for s in heading_signs_1ord]
+            if len(signs_1ord) <= 1:
+                if verbose:
+                    print('Majority capitalized or numbers in {}'.format(fragment))
+                return True
     # If there are many footnote point-like places.
     # (look also for footnotes looking like this: "a )" - it's the second sub-pattern before the
     # ending paren)
@@ -138,7 +138,7 @@ def is_meta_fragment(fragment, config, verbose=False):
             print('Few character types in {}'.format(fragment))
         return True
     # If large percentage of tokens is abbreviated
-    if fragment.count(' ') > 0 and fragment.count('. ') / fragment.count(' ') >= 0.33:
+    if len(re.findall('\\b[A-Za-z]{1,5}\\.', fragment)) > (len(fragment.split(' ')) * 0.33):
         if verbose:
             print('Too many tokens are abbreviations in {}'.format(fragment))
         return True
