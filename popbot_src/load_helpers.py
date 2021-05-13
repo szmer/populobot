@@ -55,7 +55,7 @@ heading_antisigns = ([
     [re.compile(s) for s in ['[ae]my[,\\.\\s]', '[aeyi]ć[,\\.\\s]', '[iyaeąę]ł[ay]?[,\\.\\s]', '[iae[iaeąę]]li?[,\\.\\s]', '[sś]my[,\\.\\s]', 'ąc[aey]?[mj]?u?[,\\.\\s]', '[aoe]n[yieaą][jm]?[,\\.\\s]']]
     +
     # other out of place vocabulary
-    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '\\sby[lł]', 'działo', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód', 'dokumentacja', 'literatura', 'wierzytelna', ' s\\. ', 'nieprawy']])
+    [re.compile(s, flags=re.IGNORECASE) for s in ['\\smy\\s', 'ichm', 'jmp', 'jkr', '\\smość', '\\smci', '\\span(a|u|(em))?\\s', 'Dr\\.?\\s', '\\sby[lł]', 'działo', 'brak', 'miasto', '\\saby\\s', '\\siż\\s', '\\sże\\s', 'początk', 'pamięci', 'panow', '\\stu(taj)?\\s', 'tzn', 'tj', 'według', 'wedle', 'obacz', '\\sakta\\s', 'mowa tu\\s', 'p[\\.,] \\d', 'obtulit', 'feria', 'festum', 'decretor', 'poborca', 'naprzód', 'dokumentacja', 'literatura', 'wierzytelna', ' s\\. ', 'nieprawy', 'działo s']])
 
 ocr_corrections = {
         'lnstru': 'Instru',
@@ -150,10 +150,13 @@ def is_meta_fragment(fragment, config, verbose=False):
     return False
 
 # Headings detection.
-def heading_score(paragraph, config, verbose=False):
+def heading_score(paragraph, config, length_discount=70, verbose=False):
     """
     Compute a score estimating how likely the paragraph is to be a heading. Generally fragments
     with heading score above 0 can be considered headings.
+
+    The length_discount argument controls per how many characters in the fragment one full
+    point is subtracted from the score.
     """
     if len(paragraph) < 15 or len(paragraph) > config['max_heading_len']:
         return -1.5
@@ -201,8 +204,8 @@ def heading_score(paragraph, config, verbose=False):
 
     # To be positive, the signs count must be more than a factor dependent on paragraph length
     if verbose:
-        print('-{:.1f} from paragraph length'.format((len(paragraph) / 70)))
-    return signs_count - (len(paragraph) / 70)
+        print('-{:.1f} from paragraph length'.format((len(paragraph) / length_discount)))
+    return signs_count - (len(paragraph) / length_discount)
 
 myrady = re.compile('[^\\w]{0,4}my.? r[au]d', flags=re.IGNORECASE)
 def doc_beginning_score(paragraph, config):

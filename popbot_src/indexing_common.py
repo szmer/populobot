@@ -155,7 +155,11 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
                                 config, sections, current_document_paragraphs, manual_decisions,
                                 meta_sections_buffer, current_document_id, latest_doc_section_n)
                     current_document_paragraphs = [(possible_heading_page, ocr_corrected(new_title))]
-                heading_score_estimation = heading_score(paragraph, config)
+                if "heading_length_discount" in config:
+                    heading_score_estimation = heading_score(paragraph, config,
+                            length_discount=config["heading_length_discount"])
+                else:
+                    heading_score_estimation = heading_score(paragraph, config)
                 previous_heading_score = heading_score_estimation
                 possible_heading = paragraph
                 possible_heading_page = page_n
