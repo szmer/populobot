@@ -92,11 +92,13 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
                 last_split = 0
                 lines = paragraph.split('\n')
                 for li, line in enumerate(lines):
-                    if li != len(lines)-1 and len(line) < config['min_inparagraph_line_len']:
-                        split_paragraphs.append('\n'.join(lines[last_split:li]))
+                    if len(line) < config['min_inparagraph_line_len']:
+                        split_paragraphs.append('\n'.join(lines[last_split:li+1]))
                         last_split = li+1
-                split_paragraphs.append('\n'.join(lines[last_split:]))
-        paragraphs = split_paragraphs
+                if last_split != len(lines):
+                    split_paragraphs.append('\n'.join(lines[last_split:]))
+            paragraphs = split_paragraphs
+        paragraphs = [ocr_corrected(p) for p in paragraphs]
         for paragraph in paragraphs:
             paragraph = paragraph.strip()
             if len(paragraph) == 0:
@@ -111,7 +113,7 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
                         hard_doc = True
             if not hard_doc and is_meta_fragment(paragraph, config):
                 meta = True
-                section = Section.new(config, 'meta', [(page_n, ocr_corrected(paragraph))])
+                section = Section.new(config, 'meta', [(page_n, paragraph)])
                 # A meta section is one paragraph long and cannot be split, but it
                 # can be merged.
                 for decision in page_decisions:
@@ -133,7 +135,7 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
                 # Note that all document paragraphs pass through here
                 if possible_heading:
                     if (previous_heading_score
-                            + max(0, doc_beginning_score(ocr_corrected(paragraph), config))) > 0:
+                            + max(0, doc_beginning_score(paragraph, config))) > 0:
                         commit_previous = True
                         new_title = ocr_corrected(possible_heading)
                         # The new title will be added to the next document's paragraphs
@@ -163,7 +165,7 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
             last_page = config['ignore_page_ranges'][-1][0]
         else:
             last_page = len(pages) - 1
-        current_document_paragraphs.append((last_page, ocr_corrected(paragraph)))
+        current_document_paragraphs.append((last_page, paragraph))
     if len(current_document_paragraphs) > 0:
         current_document_id, latest_doc_section_n = commit_doc_with_decisions(
                 config, sections, current_document_paragraphs, manual_decisions,

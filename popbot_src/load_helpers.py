@@ -18,7 +18,7 @@ meta_signs = [ # characteristic elements for a meta section
             # number range
             re.compile('[0-9]-[0-9]'),
             # anachronistic vocabulary
-            re.compile('(wsp[oöó0][lł)|(]czesn)|(De[oc]r\\.)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|(Corpus)|( z?ob\\.)|( str\\.)|(mowa tu)|jak to utrzymy', flags=re.IGNORECASE)
+            re.compile('(wsp[oöó0][lł)|(]czesn)|(De[oc]r\\.)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( str\\.)|(mowa tu)|(rkp\\.)|(rękopis)|jak to utrzymy', flags=re.IGNORECASE)
         ]
 
 # Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
@@ -63,8 +63,11 @@ ocr_corrections = {
         'ćm ': 'em ',
         'ćj ': 'ej ',
         'wv': 'w',
-        '^@': '§',
-        '^%': '§',
+        '^ ?@': '§',
+        '^ ?%': '§',
+        '^ ?&': '§',
+        '^ ?ś ': '§ ',
+        '^ ?g ': '§ ',
         ' lmc': ' Imc',
         ' ct ': ' et '
         }
@@ -109,8 +112,10 @@ def is_meta_fragment(fragment, config, verbose=False):
                     print('Fully capitalized {} in {}'.format(t, fragment))
                 return True
     # If the majority of words are capitalized or numbers, or non-alphanumeric.
-    titles_presence = any([True for s in resolution_titles+other_titles if s.search(fragment)])
-    if not titles_presence:
+    titles_presence = any([True
+        for s in resolution_titles+other_titles+[re.compile('[kK]ról [pP]ols')]
+        if s.search(fragment)])
+    if not titles_presence and len(tokens) >= 3:
         capit_or_num_count = (
                 len([t for t in tokens if (t[0] != t[0].lower()) or (re.search('[\\W0-9]', t))])
         )
