@@ -1,5 +1,13 @@
 *.txt
 *.csv
+*.html
+
+# Auxilliary directories.
+bak
+korba
+json
+csv*
+tei*
 
 ## Vim stuff
 # Swap
