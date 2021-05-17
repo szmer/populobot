@@ -106,12 +106,7 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
             commit_previous = False # we need to do that if we've encountered a heading
             new_title = False # we will store it here to set after commiting the previous one
             meta = False # depends on detection and possibly a manual decision
-            hard_doc = False # used when there is a substring hardcoded to be inside-doc for the edition
-            if 'hard_doc_strings' in config:
-                for hard_substr in config['hard_doc_strings']:
-                    if hard_substr in paragraph:
-                        hard_doc = True
-            if not hard_doc and is_meta_fragment(paragraph, config):
+            if is_meta_fragment(paragraph, config):
                 meta = True
                 section = Section.new(config, 'meta', [(page_n, paragraph)])
                 # A meta section is one paragraph long and cannot be split, but it
