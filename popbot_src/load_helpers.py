@@ -100,7 +100,7 @@ def is_meta_fragment(fragment, config, verbose=False):
         return True
     # If almost a majority of the fragment's tokens are very short (happens in footnotes)
     tokens = [t for t in re.split('\\s', fragment) if len(t) > 0]
-    if len([t for t in tokens if len(t) <= 2]) > 0.48 * len(tokens):
+    if len(tokens) >= 4 and len([t for t in tokens if len(t) <= 2]) > 0.48 * len(tokens):
         if verbose:
             print('Very short tokens in {}'.format(fragment))
         return True
@@ -113,7 +113,7 @@ def is_meta_fragment(fragment, config, verbose=False):
                 return True
     # If the majority of words are capitalized or numbers, or non-alphanumeric.
     titles_presence = any([True
-        for s in resolution_titles+other_titles+[re.compile('[kK]ról [pP]ols')]
+        for s in resolution_titles+other_titles+[re.compile('[kK]ról [pP]ols'), re.compile('^We? ')]
         if s.search(fragment)])
     if not titles_presence and len(tokens) >= 3:
         capit_or_num_count = (

@@ -129,19 +129,25 @@ class Section():
         self.inbook_section_id = len(sections_list)
         sections_list.append(self)
 
-    def add_to_text(self, new_pages_paragraphs, manual_decisions, meta_sections_buffer, config, document_n,
-            after_n=False):
-        """Add the new_text to section text. If there are new sections splitted,
-        they are returned as a list. The dictionary of all manual decisions
-        should be supplied as an argument."""
+    def add_to_text(self, new_pages_paragraphs, manual_decisions, meta_sections_buffer, config,
+            document_n, after_n=False):
+        """
+        Add the new_text to section text. If there are new sections splitted, they are returned as
+        a list. The dictionary of all manual decisions should be supplied as an argument.
+
+        After_n can be used to insert the new paragraphs at a specific place in the section being
+        merged to.
+        """
         additional_sections = []
         split_decisions = []
         for page_n in set([page_n for (page_n, par) in new_pages_paragraphs]):
-            for decision in manual_decisions[page_n]:
-                if decision.decision_type=='split_sections':
-                    split_decisions.append(decision)
+            if manual_decisions:
+                for decision in manual_decisions[page_n]:
+                    if decision.decision_type=='split_sections':
+                        split_decisions.append(decision)
         # Add own last paragraph for context checking.
-        pages_paragraphs = (self.pages_paragraphs[-1:] if len(self.pages_paragraphs) > 0 else [(0, '')]) + new_pages_paragraphs
+        pages_paragraphs = (self.pages_paragraphs[-1:]
+                if len(self.pages_paragraphs) > 0 else [(0, '')]) + new_pages_paragraphs
         split = False # indicates whether we need to place next parags in additional sections
         current_document_n = document_n
         added_pages_paragraphs = []
@@ -227,8 +233,6 @@ class Section():
                         return additional_sections
                     else:
                         return True
-#####                current_document_id += len([sec for sec
-#####                    in additional_sections if sec.section_type == 'document'])
                 else:
                     raise ValueError('Cannot match the section to be merged with previous document paragraphs.')
         return False

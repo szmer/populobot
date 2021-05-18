@@ -4,8 +4,12 @@ from collections import defaultdict
 csv.field_size_limit(100000000)
 
 from popbot_src.section import Section
-from popbot_src.load_helpers import heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match, ocr_corrected
-from popbot_src.indexing_helpers import read_config_file, read_manual_decisions, commit_doc_with_decisions
+from popbot_src.load_helpers import (
+        heading_score, doc_beginning_score, is_meta_fragment, fuzzy_match, ocr_corrected
+        )
+from popbot_src.indexing_helpers import (
+        read_config_file, read_manual_decisions, commit_doc_with_decisions
+        )
 
 def load_indexed(csv_file):
     "Load all sections from a file stream."
@@ -165,10 +169,29 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
         else:
             last_page = len(pages) - 1
         current_document_paragraphs.append((last_page, paragraph))
+    # Commit the last document, if we do have some paragraphs for it.
     if len(current_document_paragraphs) > 0:
         current_document_id, latest_doc_section_n = commit_doc_with_decisions(
                 config, sections, current_document_paragraphs, manual_decisions,
                 meta_sections_buffer, current_document_id, latest_doc_section_n)
+
+    # If there are no manual decisions, join the very short document sections with the next ones,
+    # which are usually the same sections in the editions that we split unnecessarily.
+    if not manual_decisions_file:
+        merge_next = False
+        deletions = []
+        for sec_n, section in enumerate(sections):
+            if section.section_type == 'document' and merge_next:
+                # Leave the manual decisions and meta buffer arguments empty.
+                merge_next.add_to_text(section.pages_paragraphs, [], [], config,
+                        section.inbook_document_id)
+                deletions.append(sec_n)
+                merge_next = False
+
+            if (section.section_type == 'document'
+                    and (len(section.pages_paragraphs) == 1 or len(section.collapsed_text()) < 250)):
+                merge_next = section
+        sections = [section for (sec_n, section) in enumerate(sections) if not sec_n in deletions]
 
     # Print collected sections as csv rows.
     for section in sections:
