@@ -30,8 +30,8 @@ for sec in edition_sections:
             is_meta_fragment(sec.pages_paragraphs[0][1], config, verbose=True)
         print(f'<p style="background-color: moccasin"><em>{output.getvalue()}</em></p>')
     else:
-        print(f'<h4>{sec.title()}</h4>')
-        for pg, par in sec.pages_paragraphs[1:]:
+        print(f'<h4>{sec.title(config)}</h4>')
+        for pg, par in sec.pages_paragraphs:
             content = par.replace('\n', '<br>')
             print(f'<p>{content}</p>')
 print('</body></html>')

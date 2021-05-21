@@ -444,7 +444,7 @@ def is_pertinent(section, config):
     if len(section.pages_paragraphs) > 2 and myrady.match(section.pages_paragraphs[2][1]) is not None:
         return True
     # Consider the title.
-    signs_pert_titles = [s.search(section.title()) for s in resolution_titles]
+    signs_pert_titles = [s.search(section.title(config)) for s in resolution_titles]
     if len([s for s in signs_pert_titles if s is not None]) > 0:
         return True
     return False

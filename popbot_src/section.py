@@ -2,7 +2,7 @@ import csv
 import datetime
 import io
 
-from popbot_src.load_helpers import extract_dates, fuzzy_match, join_linebreaks
+from popbot_src.load_helpers import extract_dates, fuzzy_match, heading_score, join_linebreaks
 from popbot_src.parsed_token import ParsedToken
 
 def tuple_to_datetime(date_tuple):
@@ -106,9 +106,16 @@ class Section():
         paragraph)"""
         return '\n\n'.join([par for (pg, par) in self.pages_paragraphs[1:]])
 
-    def title(self):
+    def title(self, config):
         if len(self.pages_paragraphs) > 0:
-            return self.pages_paragraphs[0][1]
+            max_heading_score = -10
+            max_heading = ''
+            for (pg, par) in self.pages_paragraphs[:3]:
+                score = heading_score(par, config)
+                if score > max_heading_score:
+                    max_heading_score = score
+                    max_heading = par
+            return max_heading
         else:
             return ''
 
