@@ -182,15 +182,19 @@ def load_edition(config_file_path, manual_decisions_file=False, output_stream=sy
         deletions = []
         for sec_n, section in enumerate(sections):
             if section.section_type == 'document' and merge_next:
-                # Leave the manual decisions and meta buffer arguments empty.
-                merge_next.add_to_text(section.pages_paragraphs, [], [], config,
-                        section.inbook_document_id)
                 deletions.append(sec_n)
+                merging_n = sec_n
+                # Since the target section might be already marked for deletion, we sometimes
+                # need to cascade the merges.
+                while merging_n in deletions:
+                    # Use the first char of section type as little hack to use str rindex.
+                    merging_n = ''.join([sec.section_type[0] for sec in sections[:merging_n]]).rindex('d')
+                sections[merging_n].pages_paragraphs += section.pages_paragraphs
                 merge_next = False
 
             if (section.section_type == 'document'
                     and (len(section.pages_paragraphs) == 1 or len(section.collapsed_text()) < 250)):
-                merge_next = section
+                merge_next = sec_n + 1 # avoid zero
         sections = [section for (sec_n, section) in enumerate(sections) if not sec_n in deletions]
 
     # Print collected sections as csv rows.
