@@ -181,10 +181,11 @@ def tei_empty_subcorpus(name=False, lang=False):
     body = ET.SubElement(text, 'body', attrs)
     return tei_corp, body
 
-def tei_raw_corpus(corp_name, sections, page_num_shift=0, publication_info={}):
+def tei_raw_corpus(corp_name, sections, config):
     """
     A list of pairs: (main XML of the document, the header XML).
     """
+    page_num_shift=config['page_num_shift'] if 'page_num_shift' in config else 0
     doc_pairs = []
     previous_page = 0
     note_num = 1
@@ -203,19 +204,22 @@ def tei_raw_corpus(corp_name, sections, page_num_shift=0, publication_info={}):
         region = ET.SubElement(bibl, 'region')
         region.text = sections[0].convent_location
         author = ET.SubElement(bibl, 'author')
-        author.text = sections[0].author
+        if 'authors' in config:
+            author.text = config['authors'][f'{sec.inbook_document_id}:::{sec.title(config)}']
+        else:
+            author.text = sections[0].author
         ET.SubElement(header, 'revisionDesc')
         # information on the whole outer publication
-        if publication_info:
+        if 'publication_info' in config:
             edition = ET.SubElement(source_desc, 'bibl', {'type': 'edition'})
             series_title = ET.SubElement(edition, 'title', {'level': 's'})
             series_title.text = sec.book_title
             editor_elem = ET.SubElement(edition, 'editor')
-            editor_elem.text = publication_info['editor']
+            editor_elem.text = config['publication_info']['editor']
             pub_place = ET.SubElement(edition, 'pubPlace', {'role': 'place'})
-            pub_place.text = publication_info['place']
-            pub_year = ET.SubElement(edition, 'date', {'when': str(publication_info['year']) })
-            pub_year.text = str(publication_info['year'])
+            pub_place.text = config['publication_info']['place']
+            pub_year = ET.SubElement(edition, 'date', {'when': str(config['publication_info']['year']) })
+            pub_year.text = str(config['publication_info']['year'])
             pages_scope = ET.SubElement(edition, 'biblScope', {'unit': 'page'})
             if sec.pages_paragraphs[0][0] != sec.pages_paragraphs[-1][0]:
                 pages_scope.text = '{}-{}'.format(sec.pages_paragraphs[0][0]+page_num_shift,
@@ -231,7 +235,7 @@ def tei_raw_corpus(corp_name, sections, page_num_shift=0, publication_info={}):
                 sec.pages_paragraphs[0][1]))
             note_num += 1
         if sec.section_type == 'document':
-            title = sec.pages_paragraphs[0][1]
+            title = sec.title(config)
             # the header information
             header.attrib['{'+nsmap['xml']+'}id'] = '{}-{}'.format(corp_name,
                     sec.inbook_document_id)
@@ -372,13 +376,12 @@ def tei_morphosyntax_sections(corp_name, pathed_sections):
         tei_corps.append(tei_corp)
     return tei_corps
 
-def write_tei_corpus(output_path, corp_name, sections, pathed_sections, page_num_shift=0,
-        publication_info={}):
+def write_tei_corpus(output_path, corp_name, sections, pathed_sections, config):
     output_path = '{}/{}'.format(output_path, corp_name.replace(' ', '_'))
     if not os.path.isdir(output_path):
         os.makedirs(output_path)
     # Main XMLs of the document and the header XMLs.
-    doc_pairs = tei_raw_corpus(corp_name, sections, page_num_shift=page_num_shift, publication_info=publication_info)
+    doc_pairs = tei_raw_corpus(corp_name, sections, config)
     segm_sections = tei_segmentation_sections(corp_name, pathed_sections)
     morphos_sections = tei_morphosyntax_sections(corp_name, pathed_sections)
     for (raw_corp, header), segm_corp, morphos_corp in zip(doc_pairs, segm_sections, morphos_sections):

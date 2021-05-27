@@ -1,4 +1,5 @@
 import argparse
+import csv
 import json
 import logging
 import sys
@@ -20,6 +21,9 @@ argparser.add_argument('config_file_path', help='The config file describing wher
         ' and its metadata.')
 argparser.add_argument('raw_csv_path', help='The csv file containing the loaded edition with no'
         ' further processing.')
+argparser.add_argument('--authors_file',
+        help="Path to a CSV file with doc section ID in the first column, extracted title in the"
+        " econd one, and assigned author in the fourth (the default author will be used if empty).")
 argparser.add_argument('--leave_hyphens', action='store_true',
         help="Don't join the word broken by lines with hyphens")
 argparser.add_argument('--dont_parse', action='store_true',
@@ -34,6 +38,17 @@ with open(args.raw_csv_path) as sections_file:
             if len(sec.pages_paragraphs) > 1]
 with open(args.config_file_path) as config_file:
     config = json.load(config_file)
+if args.authors_file is not None:
+    with open(args.authors_file) as authors_file:
+        reader = csv.reader(authors_file)
+        authors = dict()
+        for row in reader:
+            if not args.leave_hyphens:
+                title = join_linebreaks(row[1]).strip() # preprocess like in the loaded edition
+            else:
+                title = row[1]
+            authors[f'{row[0]}:::{title}'] = row[3]
+        config["authors"] = authors
 
 # Join the hyphens unless this is turned off.
 if not args.leave_hyphens:
@@ -48,6 +63,4 @@ if not args.dont_parse:
 
 # Print the TEI corpus.
 write_tei_corpus(args.output_tei_path, config['tei_code'], edition_sections,
-        pathed_sections=pathed_edition_sections,
-        page_num_shift=config['page_num_shift'] if 'page_num_shift' in config else 0,
-        publication_info=config['publication_info'] if 'publication_info' in config else {})
+        pathed_edition_sections, config)
