@@ -6,9 +6,7 @@ import roman
 MONTHS = '(stycze?[nń])|(luty?)|(marz?e?c)|(kwie[tc]i?e?[nń])|(maj)|(czerwi?e?c)|(lipi?e?c)|(sierpi?e?[nń])|(wrze[sś]i?e?[nń])|(październik)|(listopad)|(grudz?i?e?[nń])|([ji]anuar)|(februar)|(mart)|(april)|(mai)|([ji]u[nl]i)|(august)|(septemb)|(octob)|(decemb)'
 
 meta_signs = [ # characteristic elements for a meta section
-            # page range at the end
-            re.compile('\\d+[-—]'),
-            re.compile('[-—]\\d+'),
+            re.compile('\\d ?[-—] ?\\d'),
             # "Rękopis"
             re.compile('^.?.?Rp\\.'),
             # "mowa o"
@@ -18,7 +16,7 @@ meta_signs = [ # characteristic elements for a meta section
             # number range
             re.compile('[0-9]-[0-9]'),
             # anachronistic vocabulary
-            re.compile('(wsp[oöó0][lł)|(]czesn)|(De[oc]r\\.)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( str\\.)|(mowa tu)|(zachodzi tu)|(rkp\\.)|(rękopis)|jak to utrzymy', flags=re.IGNORECASE)
+            re.compile('(wsp[oöó0][lł)|(]czesn)|(De[oc]r\\.)|(Vol\\.)|(Vol.? leg)|(VL\\.)|(Dr\\.)|(Fasc\\.)|([fF]ol\\.)|(Hal\\. Rel\\.)|(Castr\\. Hal\\.)|(Hal\\. Laud\\.)|(Cop\\. Castr\\.)|(Lauda Dobrinensia)|(Monit\\.? Comit\\.? Pol\\.?)|( z?ob\\.)|( str\\.)|(mowa tu)|(zachodzi tu)|(rkp\\.)|(rękopis)|(jak to utrzymy)|(Lauda krakowskie)', flags=re.IGNORECASE)
         ]
 
 # Characteristic elements in a heading. Those of second order get -1 if there is no first order signs.
