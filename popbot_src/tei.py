@@ -147,14 +147,11 @@ def tei_paragraph_elem(id, break_page=False):
         ET.SubElement(paragraph, 'pb', {'n': str(break_page)})
     return paragraph
 
-def tei_raw_document(id, paragraphs, title=False, type=False):
+def tei_raw_document(id, paragraphs, type=False):
     attrs_dict = {'{'+nsmap['xml']+'}id': id}
     if type:
         attrs_dict['type'] = type
     document = ET.Element('div', attrs_dict)
-    if title:
-        head = ET.SubElement(document, 'head', {'{'+nsmap['xml']+'}id': '{}-title'.format(id)})
-        head.text = title
     for par in paragraphs:
         document.append(par)
     return document
@@ -204,10 +201,10 @@ def tei_raw_corpus(corp_name, sections, config):
         region = ET.SubElement(bibl, 'region')
         region.text = sections[0].convent_location
         author = ET.SubElement(bibl, 'author')
-        if 'authors' in config:
+        if 'authors' in config and config['authors'][f'{sec.inbook_document_id}:::{sec.title(config)}']:
             author.text = config['authors'][f'{sec.inbook_document_id}:::{sec.title(config)}']
         else:
-            author.text = sections[0].author
+            author.text = config['default_convent_author']
         ET.SubElement(header, 'revisionDesc')
         # information on the whole outer publication
         if 'publication_info' in config:
@@ -244,7 +241,7 @@ def tei_raw_corpus(corp_name, sections, config):
             bibl_title.text = title
             # the local subcorpus information
             tei_pars = []
-            for page, par in sec.pages_paragraphs[1:]:
+            for page, par in sec.pages_paragraphs:
                 break_page = False
                 if page != previous_page:
                     previous_page = page
@@ -255,9 +252,9 @@ def tei_raw_corpus(corp_name, sections, config):
                 tei_pars.append(tei_par)
                 par_num += 1
             doc = tei_raw_document('txt_{}-div'.format(sec.inbook_document_id),
-                    tei_pars, title=title, type=
-                    # TODO we need this to be more fine-grained
-                    ('document-sejmik-resolution' if sec.pertinence else 'document-sejmik-other'))
+                    tei_pars,
+                    type= ('document-sejmik-resolution'
+                        if 'sejmik' in author.text else 'document-sejmik-other'))
             body.append(doc)
         doc_pairs.append((tei_corp, header))
     return doc_pairs
