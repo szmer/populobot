@@ -1,3 +1,4 @@
+import time
 import csv
 import copy
 from logging import info
@@ -10,6 +11,8 @@ from morfeusz2 import Morfeusz
 
 from popbot_src.parsed_token import ParsedToken
 from popbot_src.MAGIC import Analyse
+
+MORFEUSZ_CONCRAFT_TEMP = f'MORFEUSZ_CONCRAFT_TEMP{time.time()}'
 
 def stringify_value(value):
     if value != 0 and not value:
@@ -166,11 +169,11 @@ def tokens_paths(sents_str, base_config=False):
         morfeusz_sentences = split_morfeusz_sents(parsed_nodes)
         for sent_n, morf_sent in enumerate(morfeusz_sentences):
             if sent_n == 0:
-                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent)
+                write_dag_from_morfeusz(MORFEUSZ_CONCRAFT_TEMP, morf_sent)
             else:
-                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent, append_sentence=True)
+                write_dag_from_morfeusz(MORFEUSZ_CONCRAFT_TEMP, morf_sent, append_sentence=True)
         # Get a list of token postions with their interps.
-        tokens_interps = path_analyzer.text_analyse('MORFEUSZ_CONCRAFT_TEMP', sents_str,
+        tokens_interps = path_analyzer.text_analyse(MORFEUSZ_CONCRAFT_TEMP, sents_str,
                 start_offset=previous_parsed_boundary)
         # Extract sentences from the tokens_interps.
         sent_counter = 0
@@ -183,7 +186,7 @@ def tokens_paths(sents_str, base_config=False):
                 pathed_sentences.append(tokens_interps[sent_start:tok_n+1])
                 sent_start = tok_n+1
                 sent_counter += 1
-        os.remove('MORFEUSZ_CONCRAFT_TEMP')
+        os.remove(MORFEUSZ_CONCRAFT_TEMP)
 
     return pathed_sentences
 
@@ -226,11 +229,11 @@ def parse_sentences(sents_str, verbose=False, category_sigils=True, base_config=
             print('Morfeusz sentences,', len(morfeusz_sentences), ':', morfeusz_sentences)
         for sent_n, morf_sent in enumerate(morfeusz_sentences):
             if sent_n == 0:
-                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent)
+                write_dag_from_morfeusz(MORFEUSZ_CONCRAFT_TEMP, morf_sent)
             else:
-                write_dag_from_morfeusz('MORFEUSZ_CONCRAFT_TEMP', morf_sent, append_sentence=True)
-        parsed_sents += parse_with_concraft(base_config['concraft_model'], 'MORFEUSZ_CONCRAFT_TEMP')
-        os.remove('MORFEUSZ_CONCRAFT_TEMP')
+                write_dag_from_morfeusz(MORFEUSZ_CONCRAFT_TEMP, morf_sent, append_sentence=True)
+        parsed_sents += parse_with_concraft(base_config['concraft_model'], MORFEUSZ_CONCRAFT_TEMP)
+        os.remove(MORFEUSZ_CONCRAFT_TEMP)
 
     return parsed_sents
 

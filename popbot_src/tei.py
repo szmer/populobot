@@ -127,11 +127,14 @@ def tei_sentence_elem(id, break_page=False):
         ET.SubElement(sentence, 'pb', {'n': str(break_page)})
     return sentence
 
-def tei_raw_paragraph(id, text, break_page=False):
+def tei_raw_paragraph(id, text, break_page=False, doc_start=False):
     paragraph = ET.Element('p', {'{'+nsmap['xml']+'}id': id})
     page_break = None
     if break_page:
-        page_break = ET.SubElement(paragraph, 'pb', {'n': str(break_page)})
+        attrs = {'n': str(break_page)}
+        if doc_start:
+            attrs['type'] = 'doc_start'
+        page_break = ET.SubElement(paragraph, 'pb', attrs)
     if page_break is not None:
         page_break.tail = text # after the pb
     else:
@@ -241,15 +244,20 @@ def tei_raw_corpus(corp_name, sections, config):
             bibl_title.text = title
             # the local subcorpus information
             tei_pars = []
+            doc_start = True
             for page, par in sec.pages_paragraphs:
                 break_page = False
                 if page != previous_page:
                     previous_page = page
                     break_page = page
+                elif doc_start:
+                    break_page = page
                 # NOTE We hardcode 1 in these ids, since each file contains one text
                 tei_par = tei_raw_paragraph('txt_1.{}-ab'.format(par_num),
-                        par, break_page=break_page+page_num_shift if break_page else 0)
+                        par, break_page=break_page+page_num_shift if break_page else 0,
+                        doc_start=doc_start)
                 tei_pars.append(tei_par)
+                doc_start = False
                 par_num += 1
             doc = tei_raw_document('txt_{}-div'.format(sec.inbook_document_id),
                     tei_pars,

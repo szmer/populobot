@@ -5,7 +5,8 @@ import sys
 
 from popbot_src.indexing_common import load_indexed
 
-argparser = argparse.ArgumentParser(description='Unpack document IDs and titles from a CSV edition to annotate authors (print to the standard output).')
+argparser = argparse.ArgumentParser(description='Unpack document IDs and titles from a CSV edition'
+        ' to annotate authors (print to the standard output).')
 argparser.add_argument('config_file_path', help='The config file describing where to find the corpus'
         ' and its metadata.')
 argparser.add_argument('raw_csv_path', help='The csv file containing the loaded edition with no'
