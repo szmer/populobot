@@ -101,10 +101,15 @@ class Section():
             rows.append(string_output.getvalue().strip())
         return rows
 
-    def collapsed_text(self):
-        """Return all paragraphs of the section as one string. This excludes the title (first
-        paragraph)"""
-        return '\n\n'.join([par for (pg, par) in self.pages_paragraphs[1:]])
+    def collapsed_text(self, first_pars=False):
+        """
+        Return all paragraphs of the section as one string. Optionally get only (first_pars)
+        first paragraphs.
+        """
+        if first_pars:
+            return '\n\n'.join([par for (pg, par) in self.pages_paragraphs[:first_pars]])
+        else:
+            return '\n\n'.join([par for (pg, par) in self.pages_paragraphs])
 
     def title(self, config):
         if len(self.pages_paragraphs) > 0:
