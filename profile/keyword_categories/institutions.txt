@@ -1,7 +1,7 @@
 administrator
 authoritates authoritatibus authoritatis authoritati authoritatem authoritatum authoritas authoritate
 chorąży cześnik łowczy miecznik podczaszy podkomorzy podstoli skarbnik stolnik
-deputat deputacki komisarz komisja trybunał
+deputat deputacki komisarz trybunał trybunalski
 duchowny kościół
 dygnitarz senator
 egzaktor poborca szafarz
@@ -18,9 +18,8 @@ poseł poselski
 przedsejmowy relationis relatio relatione relationes relationum relationibus relationem relationi
 pułkownik rotmistrz
 sąd sędzia podsędek
-sejm sejmowy
+sejm sejmowy izba
 sejmik zjazd
-regnum regni regnis regnorum regno regna Regnum Regni Regnis Regnorum Regno Regna
-Rzeczpospolita Rzpta Rzplta rzeczpospolita rzpta rzplta Republica Republicam Republicae Republicarum Republicis Republicas republica republicam republicae republicarum republicis republicas
+sukcesor
 urząd urzędnik
 wojski

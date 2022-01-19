@@ -1,9 +1,15 @@
 import argparse
+import csv
 import datetime
 import os
+from os import makedirs
 import yaml
 
-from popbot_src.methods import apply_method, basic_stats, form_frequency, lemma_frequency, form_bigrams, form_trigrams, lemma_bigrams, lemma_trigrams, keywords_bigrams, keywords_trigrams, keywords_lemma_bigrams, keywords_lemma_trigrams
+from popbot_src.methods import (
+        apply_method, basic_stats, form_frequency, lemma_frequency, form_bigrams, form_trigrams,
+        lemma_bigrams, lemma_trigrams, keywords_bigrams, keywords_trigrams, keywords_lemma_bigrams,
+        keywords_lemma_trigrams, rule_lifetime_tables
+        )
 from popbot_src.meta_methods import keyword_distribution
 from popbot_src.subset_getter import make_subset_index
 
@@ -13,6 +19,7 @@ argparser.add_argument('--omit_suspicious_interps', '-s', action='store_true', h
 argparser.add_argument('--experiment_name', help='Use (possibly overwrite) an existing experiment name.')
 argparser.add_argument('--skip_basic', action='store_true', help='Omit all the basic methods.')
 argparser.add_argument('--skip_meta', action='store_true', help='Omit all the meta methods.')
+argparser.add_argument('--skip_rules', action='store_true', help='Omit the rules creation.')
 argparser.add_argument('--dont_weight', action='store_true', help='Do not apply subcorpus weightings.')
 args = argparser.parse_args()
 
@@ -65,8 +72,12 @@ if args.experiment_name:
 else:
     experiment_name = datetime.datetime.now().isoformat()
 
-method_options = {'omit_suspicious_interps': args.omit_suspicious_interps,
-                  'profile_dir': profile_dir }
+method_options = {
+        'omit_suspicious_interps': args.omit_suspicious_interps,
+        'profile_dir': profile_dir,
+        'history_start_year': 1572,
+        'history_end_year': 1696
+        }
 
 if not args.skip_basic:
     for name, fun in [
@@ -89,6 +100,26 @@ if not args.skip_basic:
                      subsets, method_options)
         apply_method(experiment_name, 'keywords_lem_trigr_'+category_name, keywords_lemma_trigrams,
                      subsets, method_options)
+
+if not args.skip_rules:
+    category_lists = dict()
+    for (category_name, groups) in keyword_categories:
+        category_lists[category_name] = sum(groups, start=[])
+    method_options['keyword_categories'] = category_lists
+    makedirs('results/{}/{}'.format(experiment_name, 'rule_lifetimes'), exist_ok=True)
+    for (subset_name, sections) in subsets:
+        rules_lifetime, rules_lifetime_neg, year_freq_numbers = rule_lifetime_tables(sections, method_options)
+        with open('results/{}/rule_lifetimes/{}.csv'.format(experiment_name, subset_name), 'w+') as result_file:
+            writer = csv.writer(result_file, delimiter='\t')
+            for rule in rules_lifetime:
+                writer.writerow([
+                    rule,
+                    ":".join(rules_lifetime[rule]),
+                    ":".join(rules_lifetime_neg[rule])
+                    ])
+        with open('results/{}/rule_lifetimes/{}_years.csv'.format(experiment_name, subset_name), 'w+') as freq_file:
+            writer = csv.writer(freq_file, delimiter='\t')
+            writer.writerows(year_freq_numbers.items())
 
 if not args.skip_meta:
     keyword_distribution(experiment_name, [name for name, sections in subsets], method_options)

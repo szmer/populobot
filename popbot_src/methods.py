@@ -1,8 +1,10 @@
+from collections import Counter
 import re
 import csv
 from os import makedirs
 from nltk.probability import FreqDist
 from nltk.collocations import BigramCollocationFinder, BigramAssocMeasures, TrigramCollocationFinder, TrigramAssocMeasures
+from popbot_src.rule import rules_from_freqs
 from popbot_src.parsed_token import ParsedToken, NoneTokenError
 from collections import defaultdict
 
@@ -229,6 +231,58 @@ def keywords_lemma_trigrams(sections, method_options):
                                     TrigramAssocMeasures(),
                                     needed_words=[group_placeholder(group) for group in category])
     return result
+
+def rule_lifetime_tables(sections, method_options):
+    """
+    Get the dictionaries of rule -> the years when it was applicable (and not, in the second
+    returned value). The third value is the frequency dictionary of year -> number of tokens.
+    """
+    year_freqs = dict() # year -> lemma frequency counter
+    year_freq_numbers = dict() # year -> the number of tokens found for it
+    for section in sections:
+        if not section.date:
+            continue
+        year = section.date.year
+        local_counter = Counter()
+        for pg, par in section.pages_paragraphs[1:]: # skip the title
+            tokens = list(re.split('\\s', par))
+            for t_str in tokens:
+                try: # can fail if something isn't a readable token
+                    token = ParsedToken.from_str(t_str)
+                    if not method_options['omit_suspicious_interps'] or not 'brev' in token.interp:
+                        local_counter.update([token.lemma])
+                        if not year in year_freq_numbers:
+                            year_freq_numbers[year] = 0
+                        year_freq_numbers[year] += 1
+                except NoneTokenError:
+                    pass
+        if not year in year_freqs:
+            year_freqs[year] = Counter()
+        year_freqs[year].update(local_counter)
+    # Extract the rules from years and create tables of their applicability.
+    rules_lifetime = dict() # rule -> years applicable
+    rules_lifetime_neg = dict() # rule -> years not applicable
+    known_years = set()
+    for year in range(method_options['history_start_year'],
+            method_options['history_end_year']+1):
+        if not year in year_freqs:
+            continue
+        rules = rules_from_freqs(year_freqs[year], method_options['keyword_categories'])
+        # Observe rule changes.
+        for rule in rules_lifetime:
+            if not rule in rules:
+                rules_lifetime_neg[rule].append(str(year))
+        for rule in rules:
+            if not rule in rules_lifetime:
+                rules_lifetime_neg[rule] = list(known_years)
+                rules_lifetime[rule] = [str(year)]
+            else:
+                rules_lifetime[rule].append(str(year))
+        known_years.add(str(year))
+        with open(f"rules_{year}.csv", "w+") as rules_file:
+            for rule in rules:
+                print(str(rule), file=rules_file)
+    return rules_lifetime, rules_lifetime_neg, year_freq_numbers
 
 #
 # The generic method applier.

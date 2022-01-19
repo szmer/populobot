@@ -2,18 +2,21 @@ annos anne annus annis anno anni annum annorum
 blisko
 czas
 daleki
-dawny
+dawny stary
 dotąd
 dzień
+dzisiejszy
 miesiąc
-naprzód
+naprzód wprzód
 niedziela
 nowy
 ostatni
-przyszły
+pilnie
+początek
+potym poty przyszły
+prędki
 raz
 rok
-stary
 teraz teraźniejszy
 zaraz
 zawsze

@@ -1,20 +1,29 @@
 administrator
+cesarz
 chorąży cześnik łowczy miecznik podczaszy podkomorzy podsędek podstoli skarbnik stolnik sędzia
 człowiek osoba
-deputat deputacki komisarz egzaktor poborca szafarz
+deputat deputacki
+komisarz egzaktor poborca szafarz
+dzierżawca
 generał starosta podstarości 
 ichmość ichmoście imć jegomość jmć jmp mci mć
 JKM JKMć król królewski książę
 dygnitarz senator kasztelan wojewoda hetman podskarbi
-ksiądz
+ksiądz biskup
+komornik
 marszałek
+nieboszczyk
 obywatel
+ojciec
 pan panowie
+pani
 pisarz
 poddany
 poseł
 pułkownik rotmistrz
 syn
+ubogi
 urzędnik
 wojski
 żołnierz
+Żyd

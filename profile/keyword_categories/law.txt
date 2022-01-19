@@ -1,19 +1,23 @@
-akt
+akt akta
+authoritas authoritatis authoritate authoritatem authoritati authoritates authoritatum authoritatibus
 artykuł
 dekret
+delata
 duchowny
 dziedziczny
-foro fori foris fora fororum forum sąd kapturowy
+executio executionis executioni executionem executione executiones executionibus executionum
+sąd kapturowy
 granica
 gród
 instrukcja
-iuramentum iuramenti iuramento iuramenta iuramentorum iuramentis
+jurament
 księga
 prawo iura iuribus iure iuris iuri ius iurum lege legi leges legum legibus legis lex legem
-konstytucja
+konstytucja konstytucyjej constitutio constitutionis constitutioni constitutionem constitutione constitutiones constitutionibus constitutionum
 lauda laudum
 majętność
 pański
+podpis
 poena poenas poenis poenae poenarum poenam
 porządek
 powiat

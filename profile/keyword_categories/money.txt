@@ -1,18 +1,25 @@
 akcyza
 bonioribus bonissimorum bonioris bonius bonissime bonissimam bone bonas bonos bonae bonissimae boni bonissimum bono bonissimo boniori bonissimus boniora boniorem bonus bonissimi bonissimos boniore bonissima bona boniores bonissimis bonissimas bonorum bonis bonarum boniorum bonam bonissimarum bonior bonum
+chleb
 czopowe czopowy
 dług retenta
+dzierżawca
+fortuna
 grosz
 koń
 koszt
 kwit rachunek
 krzywda szkoda
+kwarta
 łan łanowy
 majętność
+moneta
 pieniądz
-pobory pobór
+pobory pobór poborowy
 podatek
 podymne podymny
+pogłówne
+prowent
 rata
 regestr
 salarium salarii salario salaria salariorum salariis
@@ -21,5 +28,5 @@ strona
 suma summa
 szelężny
 wyprawa
-zapłata zasługa
+zapłata zasługa płaca żołd
 złoty
