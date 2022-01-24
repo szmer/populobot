@@ -102,13 +102,11 @@ if not args.skip_basic:
                      subsets, method_options)
 
 if not args.skip_rules:
-    category_lists = dict()
-    for (category_name, groups) in keyword_categories:
-        category_lists[category_name] = sum(groups, start=[])
-    method_options['keyword_categories'] = category_lists
+    method_options['keyword_categories'] = dict(keyword_categories)
     makedirs('results/{}/{}'.format(experiment_name, 'rule_lifetimes'), exist_ok=True)
     for (subset_name, sections) in subsets:
-        rules_lifetime, rules_lifetime_neg, year_freq_numbers = rule_lifetime_tables(sections, method_options)
+        rules_lifetime, rules_lifetime_neg, year_freq_numbers, group_year_hits = \
+                rule_lifetime_tables(sections, method_options)
         with open('results/{}/rule_lifetimes/{}.csv'.format(experiment_name, subset_name), 'w+') as result_file:
             writer = csv.writer(result_file, delimiter='\t')
             for rule in rules_lifetime:
@@ -120,6 +118,10 @@ if not args.skip_rules:
         with open('results/{}/rule_lifetimes/{}_years.csv'.format(experiment_name, subset_name), 'w+') as freq_file:
             writer = csv.writer(freq_file, delimiter='\t')
             writer.writerows(year_freq_numbers.items())
+        with open('results/{}/rule_lifetimes/{}_keyword_group_years.csv'.format(experiment_name, subset_name), 'w+') as year_file:
+            writer = csv.writer(year_file, delimiter='\t')
+            for group_lemma in group_year_hits:
+                writer.writerow((group_lemma, ":".join([str(y) for y in group_year_hits[group_lemma]])))
 
 if not args.skip_meta:
     keyword_distribution(experiment_name, [name for name, sections in subsets], method_options)

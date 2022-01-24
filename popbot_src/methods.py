@@ -235,10 +235,13 @@ def keywords_lemma_trigrams(sections, method_options):
 def rule_lifetime_tables(sections, method_options):
     """
     Get the dictionaries of rule -> the years when it was applicable (and not, in the second
-    returned value). The third value is the frequency dictionary of year -> number of tokens.
+    returned value). The third value is the frequency dictionary of year -> number of tokens, the
+    fourth the dictionary (keyword group's first lemma) -> years when the group appears.
     """
     year_freqs = dict() # year -> lemma frequency counter
     year_freq_numbers = dict() # year -> the number of tokens found for it
+    group_year_hits = dict() # keyword group's first lemma -> list of years where it appears
+    lemma_groups = dict() # lemma -> the list of keyword groups, can be empty
     for section in sections:
         if not section.date:
             continue
@@ -250,7 +253,16 @@ def rule_lifetime_tables(sections, method_options):
                 try: # can fail if something isn't a readable token
                     token = ParsedToken.from_str(t_str)
                     if not method_options['omit_suspicious_interps'] or not 'brev' in token.interp:
-                        local_counter.update([token.lemma])
+                        if not token.lemma in lemma_groups:
+                            lemma_groups[token.lemma] = []
+                            for category in method_options['keyword_categories']:
+                                for group in method_options['keyword_categories'][category]:
+                                    for lemma in group:
+                                        if token.lemma == lemma:
+                                            lemma_groups[token.lemma].append(f"{category}_{group[0]}")
+                        # Add an occurence for each of the keyword groups associated with the lemma.
+                        for group in lemma_groups[token.lemma]:
+                            local_counter.update([group])
                         if not year in year_freq_numbers:
                             year_freq_numbers[year] = 0
                         year_freq_numbers[year] += 1
@@ -267,7 +279,13 @@ def rule_lifetime_tables(sections, method_options):
             method_options['history_end_year']+1):
         if not year in year_freqs:
             continue
-        rules = rules_from_freqs(year_freqs[year], method_options['keyword_categories'])
+        # Collect the group_year_hits.
+        for keyword_group in year_freqs[year]:
+            if not keyword_group in group_year_hits:
+                group_year_hits[keyword_group] = []
+            group_year_hits[keyword_group].append(year)
+        # Get the rules applicable in the given year.
+        rules = rules_from_freqs(year_freqs[year])
         # Observe rule changes.
         for rule in rules_lifetime:
             if not rule in rules:
@@ -282,7 +300,7 @@ def rule_lifetime_tables(sections, method_options):
         with open(f"rules_{year}.csv", "w+") as rules_file:
             for rule in rules:
                 print(str(rule), file=rules_file)
-    return rules_lifetime, rules_lifetime_neg, year_freq_numbers
+    return rules_lifetime, rules_lifetime_neg, year_freq_numbers, group_year_hits
 
 #
 # The generic method applier.
