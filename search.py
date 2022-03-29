@@ -25,7 +25,7 @@ class SearchShell(Cmd):
     intro = 'Welcome to populobot search.'
 
     def do_lex(self, patterns):
-        """Find phrases containing the given lexeme sequence and display them in context."""
+        """Find phrases containing the given lexeme sequence and display them in context. You can also provide a regular expression with an RE: mark."""
         patterns = patterns.split()
         date_range = [pat for pat in patterns if pat.startswith('DR:')]
         patterns = [pat for pat in patterns if not pat.startswith('DR:')]

@@ -236,13 +236,15 @@ def rule_lifetime_tables(sections, method_options):
     """
     Get the dictionaries of rule -> the years when it was applicable (and not, in the second
     returned value). The third value is the frequency dictionary of year -> number of tokens, the
-    fourth the dictionary (keyword group's first lemma) -> years when the group appears.
+    fourth the dictionary (keyword group's first lemma) -> dict of frequency by year.
     """
     year_freqs = dict() # year -> lemma frequency counter
     year_freq_numbers = dict() # year -> the number of tokens found for it
-    group_year_hits = dict() # keyword group's first lemma -> list of years where it appears
+    group_year_freqs = dict() # keyword group's first lemma -> list of years where it appears
     lemma_groups = dict() # lemma -> the list of keyword groups, can be empty
     for section in sections:
+        if not section.pertinence:
+            continue
         if not section.date:
             continue
         year = section.date.year
@@ -279,11 +281,11 @@ def rule_lifetime_tables(sections, method_options):
             method_options['history_end_year']+1):
         if not year in year_freqs:
             continue
-        # Collect the group_year_hits.
+        # Collect the group_year_freqs.
         for keyword_group in year_freqs[year]:
-            if not keyword_group in group_year_hits:
-                group_year_hits[keyword_group] = []
-            group_year_hits[keyword_group].append(year)
+            if not keyword_group in group_year_freqs:
+                group_year_freqs[keyword_group] = dict()
+            group_year_freqs[keyword_group][year] = year_freqs[year][keyword_group]
         # Get the rules applicable in the given year.
         rules = rules_from_freqs(year_freqs[year])
         # Observe rule changes.
@@ -300,7 +302,7 @@ def rule_lifetime_tables(sections, method_options):
         with open(f"rules_{year}.csv", "w+") as rules_file:
             for rule in rules:
                 print(str(rule), file=rules_file)
-    return rules_lifetime, rules_lifetime_neg, year_freq_numbers, group_year_hits
+    return rules_lifetime, rules_lifetime_neg, year_freq_numbers, group_year_freqs
 
 #
 # The generic method applier.

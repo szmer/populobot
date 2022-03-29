@@ -68,7 +68,7 @@ subsets = make_subset_index(args.file_list_path, indexed_attrs,
                             date_ranges=date_ranges, subcorpus_weightings=weightings)
 
 if args.experiment_name:
-    experiment_name = args.experiment_name
+    experiment_name = datetime.datetime.now().isoformat()+"_"+args.experiment_name
 else:
     experiment_name = datetime.datetime.now().isoformat()
 
@@ -104,8 +104,9 @@ if not args.skip_basic:
 if not args.skip_rules:
     method_options['keyword_categories'] = dict(keyword_categories)
     makedirs('results/{}/{}'.format(experiment_name, 'rule_lifetimes'), exist_ok=True)
+    makedirs('results/{}/{}'.format(experiment_name, 'keyword_group_years'), exist_ok=True)
     for (subset_name, sections) in subsets:
-        rules_lifetime, rules_lifetime_neg, year_freq_numbers, group_year_hits = \
+        rules_lifetime, rules_lifetime_neg, year_freq_numbers, group_year_freqs = \
                 rule_lifetime_tables(sections, method_options)
         with open('results/{}/rule_lifetimes/{}.csv'.format(experiment_name, subset_name), 'w+') as result_file:
             writer = csv.writer(result_file, delimiter='\t')
@@ -118,10 +119,11 @@ if not args.skip_rules:
         with open('results/{}/rule_lifetimes/{}_years.csv'.format(experiment_name, subset_name), 'w+') as freq_file:
             writer = csv.writer(freq_file, delimiter='\t')
             writer.writerows(year_freq_numbers.items())
-        with open('results/{}/rule_lifetimes/{}_keyword_group_years.csv'.format(experiment_name, subset_name), 'w+') as year_file:
-            writer = csv.writer(year_file, delimiter='\t')
-            for group_lemma in group_year_hits:
-                writer.writerow((group_lemma, ":".join([str(y) for y in group_year_hits[group_lemma]])))
+        for group_lemma in group_year_freqs:
+            with open('results/{}/keyword_group_years/{}.csv'.format(experiment_name, group_lemma), 'w+') as year_file:
+                writer = csv.writer(year_file, delimiter='\t')
+                for item in group_year_freqs[group_lemma].items():
+                    writer.writerow(item)
 
 if not args.skip_meta:
     keyword_distribution(experiment_name, [name for name, sections in subsets], method_options)
