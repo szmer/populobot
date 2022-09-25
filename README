@@ -1,0 +1,7 @@
+The code used for my Master's [1] (in Polish) and for generating the 0.8 version of the sejmik
+corpus [2]. It's messy, contact me if you really need to do something with it. The whole logic
+is being rewritten and moved to the tribunicia project [3].
+
+[1] https://szymonrutkowski.pl/frontpage_files/mgr_his.pdf
+[2] https://sejmiki.nlp.ipipan.waw.pl/
+[3] https://gitlab.com/szmer/tribunicia/

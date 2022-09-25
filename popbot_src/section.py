@@ -10,6 +10,7 @@ def tuple_to_datetime(date_tuple):
     return datetime.date(int(date_tuple[2]), int(date_tuple[1]), int(date_tuple[0]))
 
 def transfer_pause_data(parsed_section, raw_section):
+    "Transfer the data on tokens, telling whether they are preceded by a space."
     for par_n, (page, paragraph) in enumerate(raw_section.pages_paragraphs):
         raw_pointer = 0
         paragraph = join_linebreaks(paragraph)

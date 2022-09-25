@@ -16,7 +16,7 @@ logging.basicConfig(
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument('output_tei_path', help='Name of a catalog of TEI corpora when the corpus'
-        'will be places. This path will be created if does not exist.')
+        'will be placed. This path will be created if does not exist.')
 argparser.add_argument('config_file_path', help='The config file describing where to find the corpus'
         ' and its metadata.')
 argparser.add_argument('raw_csv_path', help='The csv file containing the loaded edition with no'
